@@ -18,6 +18,9 @@ import AdminPanel from './pages/AdminPanel';
 import ScheduleMatch from './components/Matches/ScheduleMatch';
 import StudentHead from './pages/StudentHead';
 import StudentHeadRequests from './components/StudentHead/StudentHeadRequests';
+import UserManagement from './pages/UserManagement';
+import Analytics from './pages/Analytics';
+import ApproveRequests from './pages/ApproveRequests';
 
 
 
@@ -48,23 +51,9 @@ function App() {
           <Route path="/schedule-match" element={<><Navbar /><ProtectedRoute><ScheduleMatch /></ProtectedRoute></>} />
           <Route path="/student-head" element={<><Navbar /><ProtectedRoute><StudentHead /></ProtectedRoute></>} />
           <Route path="/admin/student-head-requests" element={<><Navbar /><ProtectedRoute><StudentHeadRequests /></ProtectedRoute></>} />
-          <Route path="/" element={<Login />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/verifyEmail" element={<VerifyEmail />} />
-          <Route path="/registergoogle" element={<RegisterGoogle />} />
-
-          {/* Protected Routes */}
-          <Route path="/Home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/equipment" element={<ProtectedRoute><Equipment /></ProtectedRoute>} />
-          <Route path="/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
-          <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
-          <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-          <Route path="/schedule-match" element={<ProtectedRoute><ScheduleMatch /></ProtectedRoute>} />
-          <Route path="/student-head" element={<ProtectedRoute><StudentHead /></ProtectedRoute>} />
-          <Route path="/admin/student-head-requests" element={<ProtectedRoute><StudentHeadRequests /></ProtectedRoute>} />
+          <Route path="/admin/user-management" element={<><Navbar /><ProtectedRoute><UserManagement /></ProtectedRoute></>} />
+          <Route path="/admin/analytics" element={<><Navbar /><ProtectedRoute><Analytics /></ProtectedRoute></>} />
+          <Route path="/admin/requests" element={<><Navbar /><ProtectedRoute><ApproveRequests /></ProtectedRoute></>} />
         </Routes>
       </Router>
     </AuthProvider>

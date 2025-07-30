@@ -46,7 +46,7 @@ const AdminPanel = () => {
       icon: Package,
       title: 'Manage Inventory',
       description: 'Track and update equipment stock',
-      link: '/admin/inventory',
+      link: '/equipment',
       color: '#b5d2f8ff' // Light Blue
     },
     {
@@ -60,21 +60,21 @@ const AdminPanel = () => {
       icon: Calendar,
       title: 'Schedule Matches',
       description: 'Create and manage match schedules',
-      link: '/schedule-match',
+      link: '/matches',
       color: '#b1f5cbff' // Light Green
     },
     {
-      icon: Users,
+      icon: Trophy,
       title: 'Manage Clubs',
       description: 'Oversee club operations and members',
-      link: '/admin/clubs',
+      link: '/clubs',
       color: '#fcd3fbff' // Light pink
     },
     {
       icon: MessageSquare,
       title: 'Post Announcements',
       description: 'Share important updates and news',
-      link: '/admin/announcements',
+      link: '/announcements',
       color: '#ffdedeff' // Light Red
     },
     {
@@ -85,11 +85,18 @@ const AdminPanel = () => {
       color: '#a7fffeff' // Light Teal
     },
     {
-      icon: Users,
+      icon: Package,
       title: 'Student Head Requests',
       description: 'Manage student head position requests',
       link: '/admin/student-head-requests',
       color: '#e2dcffff' // Soft Lavender
+    },
+    {
+      icon: Users,
+      title: 'User Management',
+      description: 'Manage user roles and permissions',
+      link: '/admin/user-management',
+      color: '#f5c1deff' // Light Green
     }
   ];
 
@@ -105,18 +112,39 @@ const AdminPanel = () => {
         {stats.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
-            <div key={index} className="stat-card">
-              <div 
-                className="stat-icon" 
-                style={{ backgroundColor: `${stat.color}20`, color: stat.color }}
-              >
-                <IconComponent size={24} />
+            index === 0 ? (
+              <div key={index} className="stat-card" style={{
+                background: '#fff',
+                boxShadow: 'none',
+                border: '1px solid #e5e7eb',
+                borderRadius: '14px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}>
+                <div>
+                  <IconComponent size={32} color={stat.color} />
+                </div>
+                <div className="stat-content">
+                  <h3 style={{ color: stat.color, margin: 0 }}>{stat.count}</h3>
+                  <p style={{ margin: 0 }}>{stat.label}</p>
+                </div>
               </div>
-              <div className="stat-content">
-                <h3 style={{ color: stat.color }}>{stat.count}</h3>
-                <p>{stat.label}</p>
+            ) : (
+              <div key={index} className="stat-card">
+                <div 
+                  className="stat-icon" 
+                  style={{ backgroundColor: `${stat.color}20`, color: stat.color }}
+                >
+                  <IconComponent size={24} />
+                </div>
+                <div className="stat-content">
+                  <h3 style={{ color: stat.color }}>{stat.count}</h3>
+                  <p>{stat.label}</p>
+                </div>
               </div>
-            </div>
+            )
           );
         })}
       </div>
@@ -235,7 +263,7 @@ const AdminPanel = () => {
         </div>
       </div>
     </div>
-  );
+  );  
 };
 
 export default AdminPanel;

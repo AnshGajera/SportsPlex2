@@ -55,6 +55,9 @@ const Navbar = () => {
             <Link to="/Clubs" className={`px-3 py-2 text-sm font-medium rounded-lg ${location.pathname === '/Clubs' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>Clubs</Link>
             <Link to="/Matches" className={`px-3 py-2 text-sm font-medium rounded-lg ${location.pathname === '/Matches' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>Matches</Link>
             <Link to="/Announcements" className={`px-3 py-2 text-sm font-medium rounded-lg ${location.pathname === '/Announcements' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>Announcements</Link>
+            {currentUser && currentUser.role === 'admin' && (
+              <Link to="/admin/user-management" className={`px-3 py-2 text-sm font-medium rounded-lg ${location.pathname === '/admin/user-management' ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>User Management</Link>
+            )}
             
             {/* Profile Menu */}
             <div className="relative profile-menu">
