@@ -39,6 +39,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
+   * Fetch complete profile data for the current user
+   */
+  const fetchCompleteProfile = async (userId) => {
+    try {
+      console.log('Fetching complete profile data for user:', userId);
+      const { data } = await api.get('/profile');
+      console.log('Complete profile data fetched:', data);
+      
+      // Update currentUser with complete data
+      setCurrentUser(data);
+      localStorage.setItem('userInfo', JSON.stringify(data));
+      console.log('Updated currentUser with complete profile data');
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch complete profile:', error);
+      // Keep existing user data if fetch fails
+      return null;
+    }
+  };
+
+  /**
    * Logs the user out from both Firebase and local app state.
    */
   const logout = async () => {
@@ -53,11 +74,19 @@ export const AuthProvider = ({ children }) => {
    * On initial mount, check for existing session in localStorage.
    */
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       const storedUser = localStorage.getItem('userInfo');
       console.log('Loaded from localStorage:', storedUser);
+      
       if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+        
+        // Fetch complete profile data if user has incomplete data (missing lastName)
+        if (parsedUser && (!parsedUser.lastName || !parsedUser.firstName)) {
+          console.log('User data incomplete, fetching complete profile...');
+          await fetchCompleteProfile(parsedUser._id);
+        }
       } else {
         setCurrentUser(null);
       }
@@ -73,6 +102,7 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser,
     googleSignIn,
     logout,
+    fetchCompleteProfile,
   };
 
   return (

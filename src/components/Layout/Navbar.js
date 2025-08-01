@@ -11,14 +11,45 @@ const Navbar = () => {
   const getInitials = () => {
     if (!currentUser) return 'U';
     
-    const firstName = currentUser.firstName || currentUser.name?.split(' ')[0] || '';
-    const lastName = currentUser.lastName || currentUser.name?.split(' ')[1] || '';
+    // Try multiple ways to get the name data
+    let firstName = '';
+    let lastName = '';
     
+    // Method 1: Direct firstName/lastName properties
+    if (currentUser.firstName) {
+      firstName = currentUser.firstName.trim();
+    }
+    if (currentUser.lastName) {
+      lastName = currentUser.lastName.trim();
+    }
+    
+    // Method 2: Fall back to displayName or name property
+    if (!firstName && !lastName && currentUser.displayName) {
+      const nameParts = currentUser.displayName.trim().split(' ');
+      firstName = nameParts[0] || '';
+      lastName = nameParts[nameParts.length - 1] || '';
+      if (nameParts.length === 1) lastName = ''; // Don't duplicate if only one name
+    }
+    
+    // Method 3: Fall back to name property
+    if (!firstName && !lastName && currentUser.name) {
+      const nameParts = currentUser.name.trim().split(' ');
+      firstName = nameParts[0] || '';
+      lastName = nameParts[nameParts.length - 1] || '';
+      if (nameParts.length === 1) lastName = ''; // Don't duplicate if only one name
+    }
+    
+    // Method 4: Fall back to email if nothing else available
+    if (!firstName && !lastName && currentUser.email) {
+      firstName = currentUser.email.split('@')[0] || '';
+    }
+    
+    // Generate initials
     const firstInitial = firstName.charAt(0).toUpperCase();
     const lastInitial = lastName.charAt(0).toUpperCase();
     
-    // If we have both initials, return them; otherwise return first initial or 'U'
-    if (firstInitial && lastInitial) {
+    // Return initials based on what we have
+    if (firstInitial && lastInitial && firstInitial !== lastInitial) {
       return firstInitial + lastInitial;
     } else if (firstInitial) {
       return firstInitial;
