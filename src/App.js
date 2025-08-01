@@ -44,7 +44,7 @@ function App() {
 
           {/* Protected Routes with Navbar */}
           <Route path="/Home" element={<><Navbar /><ProtectedRoute><Home /></ProtectedRoute></>} />
-          <Route path="/equipment" element={<><Navbar /><ProtectedRoute><Equipment /></ProtectedRoute></>} />
+          <Route path="/Equipment" element={<><Navbar /><ProtectedRoute><Equipment /></ProtectedRoute></>} />
           <Route path="/clubs" element={<><Navbar /><ProtectedRoute><Clubs /></ProtectedRoute></>} />
           <Route path="/matches" element={<><Navbar /><ProtectedRoute><Matches /></ProtectedRoute></>} />
           <Route path="/announcements" element={<><Navbar /><ProtectedRoute><Announcements /></ProtectedRoute></>} />
@@ -53,7 +53,7 @@ function App() {
           <Route path="/student-head" element={<><Navbar /><ProtectedRoute><StudentHead /></ProtectedRoute></>} />
           <Route path="/admin/student-head-requests" element={<><Navbar /><ProtectedRoute><StudentHeadRequests /></ProtectedRoute></>} />
           <Route path="/admin/user-management" element={<><Navbar /><ProtectedRoute><UserManagement /></ProtectedRoute></>} />
-          <Route path="/admin/analytics" element={<><Navbar /><ProtectedRoute><Analytics /></ProtectedRoute></>} />
+          <Route path="/admin/a nalytics" element={<><Navbar /><ProtectedRoute><Analytics /></ProtectedRoute></>} />
           <Route path="/admin/requests" element={<><Navbar /><ProtectedRoute><ApproveRequests /></ProtectedRoute></>} />
           <Route path="/profile" element={<><Navbar /><ProtectedRoute><Profile /></ProtectedRoute></>} />
         </Routes>

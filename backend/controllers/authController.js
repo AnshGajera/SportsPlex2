@@ -220,6 +220,7 @@ const registerUser = async (req, res) => {
       res.status(201).json({
         _id: user._id,
         firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
         token: generateToken(user._id, true),
