@@ -9,10 +9,22 @@ const Navbar = () => {
   
   // Generate initials from user's name
   const getInitials = () => {
-    if (!currentUser) return '';
-    const firstName = currentUser.firstName || '';
-    const lastName = currentUser.lastName || '';
-    return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+    if (!currentUser) return 'U';
+    
+    const firstName = currentUser.firstName || currentUser.name?.split(' ')[0] || '';
+    const lastName = currentUser.lastName || currentUser.name?.split(' ')[1] || '';
+    
+    const firstInitial = firstName.charAt(0).toUpperCase();
+    const lastInitial = lastName.charAt(0).toUpperCase();
+    
+    // If we have both initials, return them; otherwise return first initial or 'U'
+    if (firstInitial && lastInitial) {
+      return firstInitial + lastInitial;
+    } else if (firstInitial) {
+      return firstInitial;
+    } else {
+      return 'U';
+    }
   };
 
   // Handle logout
