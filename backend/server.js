@@ -16,6 +16,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/auth', authRoutes);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', profileRoutes);
+
 const uri = 'mongodb+srv://yashcoltd:pixmamg2576@charusatcomplex.qcqgdez.mongodb.net/?retryWrites=true&w=majority&appName=charusatComplex';
 
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })

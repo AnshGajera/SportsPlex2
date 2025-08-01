@@ -72,13 +72,34 @@ const Clubs = () => {
       {activeTab === 'browse' && (
         <div>
           <div style={{ marginBottom: '32px' }}>
-            <div className="search-bar">
-              <Search size={20} className="search-icon" />
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#f7fafc',
+              borderRadius: '8px',
+              border: 'none',
+              padding: '8px 16px',
+              width: '100%',
+              maxWidth: '340px',
+              boxShadow: 'none',
+              position: 'relative'
+            }}>
+              <Search size={28} color="#9ca3af" style={{ marginRight: '8px', flexShrink: 0 }} />
               <input
                 type="text"
                 placeholder="Search clubs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  color: '#9ca3af',
+                  fontSize: '1.25rem',
+                  width: '100%',
+                  fontWeight: 500,
+                  paddingLeft: 0
+                }}
               />
             </div>
           </div>
