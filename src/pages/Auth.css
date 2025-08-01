@@ -1,0 +1,221 @@
+/* Global Styles */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eaf2fb, #d8e5f6);
+  font-family: 'Poppins', sans-serif;
+  overflow: hidden;
+}
+
+.auth-card {
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 35px 40px;
+  width: 440px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: none;
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.header-logo img {
+  width: 45px;
+  height: 45px;
+  margin-right: 10px;
+}
+
+.header-logo span {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333d4a;
+}
+
+.tagline {
+  text-align: center;
+  color: #7a828f;
+  font-size: 15px;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+/* Tabs */
+.auth-tabs,
+.login-type-tabs {
+  display: flex;
+  margin-bottom: 25px;
+  background: #f0f4f9;
+  border-radius: 8px;
+  padding: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.auth-tab,
+.login-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  cursor: pointer;
+  color: #8a96a7;
+  transition: all 0.2s ease-in-out;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.auth-tab.active,
+.login-tab.active {
+  background: #ffffff;
+  color: #333d4a;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 5px;
+  position: relative;
+  z-index: 2;
+}
+
+.auth-tab:hover:not(.active),
+.login-tab:hover:not(.active) {
+  background: #e7eff8;
+  color: #6a7482;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333d4a;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid #e0e5ea;
+  border-radius: 8px;
+  background: #fdfefe;
+  color: #333d4a;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  font-size: 16px;
+}
+
+.form-group input::placeholder {
+  color: #b0b8c2;
+}
+
+.form-group input:focus {
+  border-color: #79aef7;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background: #ffffff;
+}
+
+.password-field {
+  display: flex;
+  align-items: center;
+  background: #fdfefe;
+  border-radius: 8px;
+  border: 1px solid #e0e5ea;
+}
+
+.password-field input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #333d4a;
+  padding: 14px 0;
+  font-size: 16px;
+}
+
+.password-field button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 15px;
+  color: #b0b8c2;
+  opacity: 0.9;
+  transition: color 0.2s;
+}
+
+.password-field button:hover {
+  color: #7a828f;
+}
+
+/* Primary Button */
+.submit-button {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  margin-top: 25px;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+  font-size: 18px;
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.25);
+}
+
+.submit-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 7px 18px rgba(59, 130, 246, 0.35);
+}
+
+/* Google Button - Small Circle Icon */
+.google-icon-button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e0e5ea;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 0;
+}
+
+.google-icon-button img {
+  width: 18px;
+  height: 18px;
+}
+
+.google-icon-button:hover {
+  background: #f7f9fb;
+  transform: translateY(-1px);
+}
+
+/* Button Row for Google & Forgot */
+.button-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+/* Forgot Password Inline */
+.forgot-password-inline a {
+  color: #7a828f;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.forgot-password-inline a:hover {
+  color: #3b82f6;
+  text-decoration: underline;
+}
