@@ -47,6 +47,7 @@ const Equipment = () => {
 
       {activeTab === 'browse' && (
         <div>
+<<<<<<< HEAD
           <div style={{ 
             display: 'flex', 
             gap: '16px', 
@@ -55,23 +56,65 @@ const Equipment = () => {
           }}>
             <div className="search-bar">
               <Search size={20} className="search-icon" />
+=======
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'nowrap', alignItems: 'center' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#f7fafc',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb',
+              boxShadow: 'none',
+              padding: '8px 20px',
+              width: '420px',
+              minWidth: '220px',
+              position: 'relative'
+            }}>
+              <Search size={24} color="#9ca3af" style={{ marginRight: '12px', flexShrink: 0 }} />
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
               <input
                 type="text"
                 placeholder="Search equipment..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+<<<<<<< HEAD
+=======
+                style={{
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  color: '#9ca3af',
+                  fontSize: '1.15rem',
+                  width: '100%',
+                  fontWeight: 500,
+                  paddingLeft: 0
+                }}
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
               />
             </div>
             <select 
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               style={{
+<<<<<<< HEAD
                 padding: '12px 16px',
                 border: '1px solid #d1d5db',
                 borderRadius: '8px',
                 fontSize: '14px',
                 backgroundColor: 'white',
                 minWidth: '200px'
+=======
+                padding: '10px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                fontSize: '15px',
+                backgroundColor: 'white',
+                color: '#64748b',
+                minWidth: '120px',
+                fontWeight: 500,
+                height: '40px',
+                boxShadow: 'none'
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
               }}
             >
               {categories.map(category => (
@@ -79,7 +122,10 @@ const Equipment = () => {
               ))}
             </select>
           </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
           <div className="empty-state">
             <Package size={64} className="empty-state-icon" />
             <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>

@@ -17,7 +17,10 @@
     "lucide-react": "^0.525.0",
     "mongodb": "^6.17.0",
     "mongoose": "^8.16.4",
+<<<<<<< HEAD
     "multer": "^2.0.2",
+=======
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.60.0",

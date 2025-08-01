@@ -122,7 +122,21 @@ const AdminPanel = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
+<<<<<<< HEAD
               }}>
+=======
+                transition: 'transform 0.2s, box-shadow 0.2s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
+                e.currentTarget.style.boxShadow = '0 4px 24px #e5e7eb';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+              >
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
                 <div>
                   <IconComponent size={32} color={stat.color} />
                 </div>
@@ -132,7 +146,23 @@ const AdminPanel = () => {
                 </div>
               </div>
             ) : (
+<<<<<<< HEAD
               <div key={index} className="stat-card">
+=======
+              <div key={index} className="stat-card" style={{
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                borderRadius: '14px',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
+                e.currentTarget.style.boxShadow = '0 4px 24px #e5e7eb';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+              >
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
                 <div 
                   className="stat-icon" 
                   style={{ backgroundColor: `${stat.color}20`, color: stat.color }}
@@ -173,7 +203,20 @@ const AdminPanel = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'center',
+<<<<<<< HEAD
                 }}>
+=======
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
+                  e.currentTarget.style.boxShadow = `0 4px 24px ${cardColor}`;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = `0 2px 12px ${cardColor}55`;
+                }}
+                >
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
                   <div
                     style={{
                       width: '40px',
@@ -211,7 +254,23 @@ const AdminPanel = () => {
 
       {/* Quick Overview Sections */}
       <div className="grid grid-2">
+<<<<<<< HEAD
         <div className="card">
+=======
+        <div className="card" style={{
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          borderRadius: '14px',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
+          e.currentTarget.style.boxShadow = '0 4px 24px #e5e7eb';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'none';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        >
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1e293b' }}>
               Pending Equipment Requests
@@ -236,7 +295,23 @@ const AdminPanel = () => {
           </div>
         </div>
 
+<<<<<<< HEAD
         <div className="card">
+=======
+        <div className="card" style={{
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          borderRadius: '14px',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
+          e.currentTarget.style.boxShadow = '0 4px 24px #e5e7eb';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'none';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        >
+>>>>>>> f0e00accaa838fe3d084eb54df2a35fc129ac6e7
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#1e293b' }}>
               Live Matches
