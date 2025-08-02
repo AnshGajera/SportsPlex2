@@ -114,13 +114,6 @@ const Profile = () => {
         department: userData.department || '',
         rollNo: userData.rollNo || ''
       });
-      
-      // IMPORTANT: Update the currentUser in AuthContext with complete profile data
-      const updatedUser = { ...currentUser, ...userData };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('userInfo', JSON.stringify(updatedUser));
-      console.log('Updated currentUser in context with complete profile data:', updatedUser);
-      
       console.log('Profile data updated successfully');
       console.log('=== END FRONTEND DEBUG ===');
     } catch (error) {

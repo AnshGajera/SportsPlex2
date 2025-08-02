@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 const UserManagement = () => {
   const [activeTab, setActiveTab] = useState('admins');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResult, setSearchResult] = useState(null);
 
@@ -32,11 +33,13 @@ const UserManagement = () => {
     }
   };
 
+
   return (
     <div className="container" style={{ padding: '32px 20px' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 className="page-title">User Management</h1>
         <p className="page-subtitle">Manage user roles and permissions</p>
+
         {/* Search bar for students */}
         <div style={{ marginTop: '24px', maxWidth: '340px' }}>
           <div style={{
@@ -66,6 +69,7 @@ const UserManagement = () => {
             />
           </div>
         </div>
+
       </div>
 
       <div className="tabs">
@@ -89,6 +93,7 @@ const UserManagement = () => {
         </button>
       </div>
 
+
       <div className="section-content" style={{ marginTop: '24px' }}>
         {activeTab === 'admins' && (
           <div>
@@ -100,6 +105,7 @@ const UserManagement = () => {
           <div>
             <h2>Students</h2>
             <p>Manage student users here.</p>
+
             {/* Show search result if available */}
             {searchResult ? (
               <div style={{ marginTop: '16px', padding: '16px', background: '#f3f4f6', borderRadius: '8px' }}>
@@ -107,6 +113,7 @@ const UserManagement = () => {
                 <div><strong>Email:</strong> {searchResult.email}</div>
               </div>
             ) : null}
+
           </div>
         )}
         {activeTab === 'studentHeads' && (

@@ -72,6 +72,7 @@ const Clubs = () => {
       {activeTab === 'browse' && (
         <div>
           <div style={{ marginBottom: '32px' }}>
+
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -85,11 +86,13 @@ const Clubs = () => {
               position: 'relative'
             }}>
               <Search size={28} color="#9ca3af" style={{ marginRight: '8px', flexShrink: 0 }} />
+
               <input
                 type="text"
                 placeholder="Search clubs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+
                 style={{
                   border: 'none',
                   outline: 'none',

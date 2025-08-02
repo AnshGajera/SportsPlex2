@@ -50,6 +50,9 @@ const Announcements = () => {
         marginBottom: '32px',
         flexWrap: 'wrap'
       }}>
+        <div className="search-bar">
+          <Search size={20} className="search-icon" />
+        </div>
         <div style={{
           display: 'flex',
           alignItems: 'center',

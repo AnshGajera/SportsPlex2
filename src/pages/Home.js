@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Users, Trophy, Bell, User } from 'lucide-react';
+import { Package, Users, Trophy, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 
@@ -50,6 +50,7 @@ const Home = () => {
       link: '/equipment',
       bgColor: '#f0f7ff'
     },
+    
     {
       icon: Users,
       title: 'Join Clubs',
@@ -105,21 +106,11 @@ const Home = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action, index) => {
             const IconComponent = action.icon;
-            // Define colors for each action
-            const actionColors = {
-              '/profile': '#f59e0b',
-              '/equipment': '#3b82f6', 
-              '/clubs': '#10b981',
-              '/matches': '#f59e0b',
-              '/announcements': '#8b5cf6'
-            };
-            const iconColor = actionColors[action.link] || '#6b7280';
-            
             return (
               <Link key={index} to={action.link} className="block">
                 <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <div style={{ backgroundColor: action.bgColor }} className="w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                    <IconComponent size={24} style={{ color: iconColor }} />
+                    <IconComponent size={24} style={{ color: stats[index].color }} />
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">{action.title}</h3>
                   <p className="text-gray-600 text-sm">{action.description}</p>
