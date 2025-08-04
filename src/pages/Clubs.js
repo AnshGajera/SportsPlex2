@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 const Clubs = () => {
   const [activeTab, setActiveTab] = useState('browse');
   const [searchTerm, setSearchTerm] = useState('');
   const { currentUser } = useAuth();
+  const [clubs, setClubs] = useState([]);
+  const [myClubs, setMyClubs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [clubForm, setClubForm] = useState({
     name: '',
     description: '',
@@ -13,6 +19,60 @@ const Clubs = () => {
     image: null,
     imagePreview: null,
   });
+
+  // Fetch all clubs
+  const fetchClubs = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      
+      const response = await api.get(`/clubs?${params}`);
+      setClubs(response.data);
+    } catch (error) {
+      console.error('Error fetching clubs:', error);
+      setError('Failed to fetch clubs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch user's clubs
+  const fetchMyClubs = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const response = await api.get('/clubs/user/my-clubs');
+      setMyClubs(response.data);
+    } catch (error) {
+      console.error('Error fetching my clubs:', error);
+    }
+  };
+
+  // Use effect to fetch data with debounce for search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (activeTab === 'browse') {
+        fetchClubs();
+      } else if (activeTab === 'my-clubs' && currentUser && currentUser.role !== 'admin') {
+        fetchMyClubs();
+      }
+    }, searchTerm ? 500 : 0); // 500ms debounce for search, immediate for tab change
+
+    return () => clearTimeout(timeoutId);
+  }, [activeTab, searchTerm, currentUser]);
+
+  // Clear messages after 5 seconds
+  useEffect(() => {
+    if (error || success) {
+      const timer = setTimeout(() => {
+        setError('');
+        setSuccess('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, success]);
 
   const handleFormChange = (e) => {
     const { name, value, files } = e.target;
@@ -31,22 +91,93 @@ const Clubs = () => {
     setClubForm((prev) => ({ ...prev, image: null, imagePreview: null }));
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    // Here you would handle the form submission to backend
-    alert('Club created! (UI only, no backend logic)');
+    
+    try {
+      setLoading(true);
+      setError('');
+      setSuccess('');
+      
+      const formData = new FormData();
+      formData.append('name', clubForm.name);
+      formData.append('description', clubForm.description);
+      formData.append('category', clubForm.category);
+      
+      if (clubForm.image) {
+        formData.append('image', clubForm.image);
+      }
+      
+      const response = await api.post('/clubs', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      setSuccess('Club created successfully!');
+      setClubForm({
+        name: '',
+        description: '',
+        category: '',
+        image: null,
+        imagePreview: null,
+      });
+      
+      // Refresh clubs list
+      fetchClubs();
+    } catch (error) {
+      console.error('Error creating club:', error);
+      setError(error.response?.data?.message || 'Failed to create club');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const clubs = [
-    // Add sample clubs here if needed
-  ];
-
-  const myClubs = [
-    // Add user's clubs here if needed
-  ];
+  const handleJoinClub = async (clubId) => {
+    try {
+      setLoading(true);
+      await api.post(`/clubs/${clubId}/join`);
+      setSuccess('Successfully joined the club!');
+      fetchClubs(); // Refresh clubs to update member count
+    } catch (error) {
+      console.error('Error joining club:', error);
+      setError(error.response?.data?.message || 'Failed to join club');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container" style={{ padding: '32px 20px' }}>
+      {/* Error and Success Messages */}
+      {error && (
+        <div style={{
+          background: '#fee2e2',
+          border: '1px solid #fecaca',
+          color: '#dc2626',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          marginBottom: '24px',
+          fontSize: '14px'
+        }}>
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div style={{
+          background: '#dcfce7',
+          border: '1px solid #bbf7d0',
+          color: '#16a34a',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          marginBottom: '24px',
+          fontSize: '14px'
+        }}>
+          {success}
+        </div>
+      )}
+
       <div style={{ marginBottom: '32px' }}>
         <h1 className="page-title">Sports Clubs</h1>
         <p className="page-subtitle">
@@ -72,7 +203,6 @@ const Clubs = () => {
       {activeTab === 'browse' && (
         <div>
           <div style={{ marginBottom: '32px' }}>
-
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -86,13 +216,11 @@ const Clubs = () => {
               position: 'relative'
             }}>
               <Search size={28} color="#9ca3af" style={{ marginRight: '8px', flexShrink: 0 }} />
-
               <input
                 type="text"
                 placeholder="Search clubs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-
                 style={{
                   border: 'none',
                   outline: 'none',
@@ -107,15 +235,157 @@ const Clubs = () => {
             </div>
           </div>
 
-          <div className="empty-state">
-            <Users size={64} className="empty-state-icon" />
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-              No clubs available
-            </h3>
-            <p style={{ marginBottom: '24px' }}>
-              No sports clubs are currently available. Check back later or contact administrator.
-            </p>
-          </div>
+          {/* Loading State */}
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
+              <div style={{ fontSize: '18px' }}>Loading clubs...</div>
+            </div>
+          )}
+
+          {/* Clubs Grid */}
+          {!loading && clubs.length > 0 && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '24px',
+              marginTop: '24px'
+            }}>
+              {clubs.map((club) => (
+                <div key={club._id} style={{
+                  background: '#ffffff',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  border: '1px solid #e2e8f0',
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+                }}
+                >
+                  {/* Club Image */}
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    backgroundColor: '#f1f5f9',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '16px',
+                    overflow: 'hidden'
+                  }}>
+                    {club.image ? (
+                      <img 
+                        src={`http://localhost:5000${club.image}`}
+                        alt={club.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    ) : (
+                      <Users size={24} color="#64748b" />
+                    )}
+                  </div>
+
+                  {/* Club Info */}
+                  <h3 style={{
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    marginBottom: '8px',
+                    color: '#111827'
+                  }}>
+                    {club.name}
+                  </h3>
+                  <p style={{
+                    color: '#64748b',
+                    fontSize: '14px',
+                    marginBottom: '12px',
+                    lineHeight: '1.5'
+                  }}>
+                    {club.description}
+                  </p>
+
+                  {/* Category Badge */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <span style={{
+                      background: '#e0e7ff',
+                      color: '#3730a3',
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: '500'
+                    }}>
+                      {club.category}
+                    </span>
+                  </div>
+
+                  {/* Member count */}
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '14px',
+                    color: '#64748b',
+                    marginBottom: '16px'
+                  }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Users size={16} />
+                      {club.memberCount || club.members?.length || 0} members
+                    </span>
+                  </div>
+
+                  {/* Action Button */}
+                  {currentUser && (
+                    <button
+                      onClick={() => handleJoinClub(club._id)}
+                      disabled={loading}
+                      style={{
+                        width: '100%',
+                        background: '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px 16px',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        opacity: loading ? 0.6 : 1,
+                        transition: 'background 0.2s ease'
+                      }}
+                      onMouseOver={(e) => !loading && (e.target.style.background = '#1d4ed8')}
+                      onMouseOut={(e) => !loading && (e.target.style.background = '#2563eb')}
+                    >
+                      {loading ? 'Joining...' : 'Join Club'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && clubs.length === 0 && (
+            <div className="empty-state">
+              <Users size={64} className="empty-state-icon" />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
+                {searchTerm ? 'No clubs match your search' : 'No clubs available'}
+              </h3>
+              <p style={{ marginBottom: '24px' }}>
+                {searchTerm 
+                  ? 'Try adjusting your search terms.'
+                  : 'No sports clubs are currently available. Check back later or contact administrator.'
+                }
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -246,8 +516,8 @@ const Clubs = () => {
             </div>
           ) : (
             <div className="grid grid-3">
-              {myClubs.map((club, index) => (
-                <div key={index} className="card">
+              {myClubs.map((club) => (
+                <div key={club._id} className="card">
                   <div style={{ 
                     width: '60px', 
                     height: '60px', 
@@ -256,9 +526,22 @@ const Clubs = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginBottom: '16px'
+                    marginBottom: '16px',
+                    overflow: 'hidden'
                   }}>
-                    <Users size={24} color="#64748b" />
+                    {club.image ? (
+                      <img 
+                        src={`http://localhost:5000${club.image}`}
+                        alt={club.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    ) : (
+                      <Users size={24} color="#64748b" />
+                    )}
                   </div>
                   <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>
                     {club.name}
@@ -273,8 +556,8 @@ const Clubs = () => {
                     fontSize: '14px',
                     color: '#64748b'
                   }}>
-                    <span>{club.members} members</span>
-                    <span>Joined {club.joinedDate}</span>
+                    <span>{club.memberCount || club.members?.length || 0} members</span>
+                    <span>Joined {club.joinedAt ? new Date(club.joinedAt).toLocaleDateString() : 'Recently'}</span>
                   </div>
                 </div>
               ))}
