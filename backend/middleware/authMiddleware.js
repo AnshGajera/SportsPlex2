@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
+const User = require('../models/user');
 const JWT_SECRET = 'myverysecretkey';
 
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   console.log('=== AUTH MIDDLEWARE DEBUG ===');
@@ -19,8 +20,22 @@ const protect = (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     console.log('JWT Token decoded successfully:', decoded);
     console.log('User ID from token:', decoded.id);
+    
+    // Fetch complete user information from database
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      console.log('ERROR: User not found in database');
+      return res.status(401).json({ message: "Not authorized, user not found" });
+    }
+    
+    console.log('User fetched from database:', {
+      id: user._id,
+      email: user.email,
+      role: user.role
+    });
     console.log('=== END AUTH MIDDLEWARE ===');
-    req.user = decoded;
+    
+    req.user = user;
     next();
   } catch (error) {
     console.error('JWT verification failed:', error);
