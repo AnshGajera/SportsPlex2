@@ -79,23 +79,74 @@ const Login = () => {
     try {
       if (activeTab === 'login') {
         // --- Handle Login API Call ---
-        const { signInWithEmailAndPassword } = await import('firebase/auth');
-        // First authenticate with Firebase
-        await signInWithEmailAndPassword(auth, data.email, data.password);
-        
-        // Then get user data from our backend
-        const response = await api.post('/auth/login', data);
-        setMessage('Login successful! Redirecting...');
-        // Log the response data to verify user information
-        console.log('Login response data:', response.data);
-        // Update context and local storage
-        setCurrentUser(response.data);
-        localStorage.setItem('userInfo', JSON.stringify(response.data));
-        // Redirect based on role
-        if (response.data.role === 'admin') {
-          navigate('/admin', { replace: true });
-        } else {
-          navigate('/Home', { replace: true });
+        try {
+          const { signInWithEmailAndPassword, fetchSignInMethodsForEmail } = await import('firebase/auth');
+          
+          // First, check if email exists to provide better error messages
+          let emailExists = false;
+          try {
+            const signInMethods = await fetchSignInMethodsForEmail(auth, data.email);
+            emailExists = signInMethods.length > 0;
+          } catch (emailCheckError) {
+            // If we can't check email existence, continue with normal flow
+            console.log('Could not check email existence:', emailCheckError);
+          }
+          
+          // Attempt Firebase authentication
+          await signInWithEmailAndPassword(auth, data.email, data.password);
+          
+          // Then get user data from our backend
+          const response = await api.post('/auth/login', data);
+          setMessage('Login successful! Redirecting...');
+          
+          // Log the response data to verify user information
+          console.log('Login response data:', response.data);
+          
+          // Update context and local storage
+          setCurrentUser(response.data);
+          localStorage.setItem('userInfo', JSON.stringify(response.data));
+          
+          // Redirect based on role
+          if (response.data.role === 'admin') {
+            navigate('/admin', { replace: true });
+          } else {
+            navigate('/Home', { replace: true });
+          }
+        } catch (firebaseError) {
+          // Handle Firebase authentication errors specifically
+          console.log('Firebase error code:', firebaseError.code);
+          console.log('Firebase error message:', firebaseError.message);
+          
+          if (firebaseError.code === 'auth/wrong-password') {
+            throw new Error('WRONG_PASSWORD');
+          } else if (firebaseError.code === 'auth/user-not-found') {
+            throw new Error('USER_NOT_FOUND');
+          } else if (firebaseError.code === 'auth/invalid-email') {
+            throw new Error('INVALID_EMAIL');
+          } else if (firebaseError.code === 'auth/invalid-credential') {
+            // Check if we were able to determine email existence
+            try {
+              const { fetchSignInMethodsForEmail } = await import('firebase/auth');
+              const signInMethods = await fetchSignInMethodsForEmail(auth, data.email);
+              
+              if (signInMethods.length === 0) {
+                // Email doesn't exist
+                throw new Error('USER_NOT_FOUND');
+              } else {
+                // Email exists, so password is wrong
+                throw new Error('WRONG_PASSWORD');
+              }
+            } catch (emailError) {
+              // If email check fails, provide generic message
+              throw new Error('INVALID_CREDENTIAL');
+            }
+          } else if (firebaseError.code === 'auth/too-many-requests') {
+            throw new Error('TOO_MANY_REQUESTS');
+          } else if (firebaseError.code === 'auth/user-disabled') {
+            throw new Error('USER_DISABLED');
+          } else {
+            throw firebaseError;
+          }
         }
       } else {
         // --- Handle Register API Call ---
@@ -105,8 +156,8 @@ const Login = () => {
         // Create user in Firebase Auth and send verification email
         try {
           const { createUserWithEmailAndPassword, sendEmailVerification } = await import('firebase/auth');
-          const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-          await sendEmailVerification(userCredential.user);
+          const user  = await createUserWithEmailAndPassword(auth, data.email, data.password);
+          await sendEmailVerification(user .user);
         } catch (firebaseError) {
           // If user already exists in Firebase, skip
           if (firebaseError.code !== 'auth/email-already-in-use') {
@@ -123,19 +174,52 @@ const Login = () => {
         navigate('/verifyEmail', { state: { email: data.email } });
       }
     } catch (error) {
-      let errorMessage = error.response?.data?.message || 'An unexpected error occurred.';
+      let errorMessage = 'An unexpected error occurred.';
       
-      // Handle Firebase specific errors
-      if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password.';
+      // Handle custom error codes from login try-catch
+      if (error.message === 'WRONG_PASSWORD') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (error.message === 'USER_NOT_FOUND') {
+        errorMessage = 'Email ID not found. Please check your email or register first.';
+      } else if (error.message === 'INVALID_EMAIL') {
+        errorMessage = 'Invalid email format. Please enter a valid email.';
+      } else if (error.message === 'INVALID_CREDENTIAL') {
+        // For modern Firebase, invalid-credential means wrong email OR password
+        // We can't distinguish, so provide a generic message
+        errorMessage = 'Incorrect email or password.';
+      } else if (error.message === 'TOO_MANY_REQUESTS') {
+        errorMessage = 'Too many failed attempts. Please try again later.';
+      } else if (error.message === 'USER_DISABLED') {
+        errorMessage = 'This account has been disabled. Please contact support.';
+      } else if (error.message && error.message.includes('Incorrect password')) {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (error.message && error.message.includes('Email ID not found')) {
+        errorMessage = 'Email ID not found. Please check your email or register first.';
+      } else if (error.message && error.message.includes('Invalid email')) {
+        errorMessage = 'Invalid email format. Please enter a valid email.';
+      } else if (error.message && error.message.includes('Too many failed attempts')) {
+        errorMessage = 'Too many failed attempts. Please try again later.';
+      } else if (error.message && error.message.includes('account has been disabled')) {
+        errorMessage = 'This account has been disabled. Please contact support.';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
       } else if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email.';
+        errorMessage = 'Email ID not found. Please check your email or register first.';
       } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email format.';
+        errorMessage = 'Invalid email format. Please enter a valid email.';
+      } else if (error.code === 'auth/invalid-credential') {
+        errorMessage = 'Incorrect email or password.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed attempts. Please try again later.';
+      } else if (error.code === 'auth/user-disabled') {
+        errorMessage = 'This account has been disabled. Please contact support.';
+      } else if (error.response?.data?.message) {
+        // Handle backend API errors
+        errorMessage = error.response.data.message;
       }
       
       setMessage(errorMessage);
-      console.error('Submission failed:', error);
+      console.error('Login failed:', error);
     } finally {
       setLoading(false);
     }
