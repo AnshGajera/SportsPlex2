@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Filter, Package } from 'lucide-react';
+import SearchBar from '../components/SearchBar';
 
 const Equipment = () => {
   const [activeTab, setActiveTab] = useState('browse');
@@ -47,51 +48,35 @@ const Equipment = () => {
 
       {activeTab === 'browse' && (
         <div>
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'nowrap', alignItems: 'center' }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: '#f7fafc',
-              borderRadius: '12px',
-              border: '1px solid #e5e7eb',
-              boxShadow: 'none',
-              padding: '8px 20px',
-              width: '420px',
-              minWidth: '220px',
-              position: 'relative'
-            }}>
-              <Search size={24} color="#9ca3af" style={{ marginRight: '12px', flexShrink: 0 }} />
-              <input
-                type="text"
-                placeholder="Search equipment..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  color: '#9ca3af',
-                  fontSize: '1.15rem',
-                  width: '100%',
-                  fontWeight: 500,
-                  paddingLeft: 0
-                }}
-              />
-            </div>
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <SearchBar
+              placeholder="Search equipment by name or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
             <select 
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               style={{
                 padding: '10px 16px',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '15px',
-                backgroundColor: 'white',
-                color: '#64748b',
-                minWidth: '120px',
-                fontWeight: 500,
+                paddingRight: '35px',
+                border: '1px solid #e2e8f0',
+                borderRadius: '20px',
+                fontSize: '13px',
+                backgroundColor: '#ffffff',
+                color: '#374151',
+                minWidth: '150px',
+                fontWeight: '400',
                 height: '40px',
-                boxShadow: 'none'
+                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                outline: 'none',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
+                appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'right 10px center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '14px',
+                cursor: 'pointer'
               }}
             >
               {categories.map(category => (

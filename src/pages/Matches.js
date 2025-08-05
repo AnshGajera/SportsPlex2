@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Trophy, Plus } from 'lucide-react';
 import ScheduleMatch from '../components/Matches/ScheduleMatch';
+import SearchBar from '../components/SearchBar';
 
 const Matches = () => {
   const [activeTab, setActiveTab] = useState('live');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const liveMatches = [];
   const upcomingMatches = [];
@@ -29,7 +31,7 @@ const Matches = () => {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'start',
-        marginBottom: '32px'
+        marginBottom: '1px'
       }}>
         <div>
           <h1 className="page-title">Matches</h1>
@@ -42,6 +44,15 @@ const Matches = () => {
           <Plus size={20} />
           Schedule Match
         </button>
+      </div>
+
+      {/* Search Bar */}
+      <div style={{ marginBottom: '24px' }}>
+        <SearchBar
+          placeholder="Search matches by team or event..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
       <div className="tabs">
