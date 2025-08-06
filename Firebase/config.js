@@ -72,21 +72,25 @@ export const sendVerificationEmail = async (user, actionCodeSettings = null) => 
   }
 };
 
-// Resend verification email function - Simple implementation
-export const resendVerificationEmail = () => {
-  const user = auth.currentUser;
-  if (user) {
-    return sendEmailVerification(user)
-      .then(() => {
-        console.log('Verification email resent successfully');
-        return { success: true, message: 'Verification email resent!' };
-      })
-      .catch((err) => {
-        console.error('Failed to resend verification email:', err);
-        return { success: false, error: 'Failed to resend. Try again later.' };
-      });
-  } else {
-    return Promise.resolve({ success: false, error: 'No authenticated user found.' });
+// Resend verification email function
+export const resendVerificationEmail = async () => {
+  try {
+    const user = auth.currentUser;
+    
+    if (!user) {
+      return { success: false, error: 'No authenticated user found. Please log in again.' };
+    }
+
+    if (user.emailVerified) {
+      return { success: false, error: 'Email is already verified.' };
+    }
+
+    const result = await sendVerificationEmail(user);
+    return result;
+    
+  } catch (error) {
+    console.error('Error in resendVerificationEmail:', error);
+    return { success: false, error: 'Failed to resend verification email' };
   }
 };
 
