@@ -40,6 +40,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/verifyEmail" element={<VerifyEmail />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/registergoogle" element={<RegisterGoogle />} />
 
           {/* Protected Routes with Navbar */}

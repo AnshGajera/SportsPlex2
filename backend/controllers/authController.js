@@ -179,6 +179,9 @@ const JWT_SECRET = 'myverysecretkey';  // ✅ Hardcoded secret key
 const JWT_EXPIRES_IN = '30d';
 const ADMIN_SECRET_CODE = 'myadminsecret';
 
+// Temporary storage for unverified users (in production, use Redis or database)
+const pendingUsers = new Map();
+
 const generateToken = (id, profileComplete) => {
   return jwt.sign({ id, profileComplete }, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
@@ -188,10 +191,13 @@ const generateToken = (id, profileComplete) => {
 const registerUser = async (req, res) => {
   const { firstName, middleName, lastName, email, password, rollNo, college, department, gender, phoneNumber } = req.body;
 
+  console.log('registerUser called with email:', email);
+
   try {
     const userExists = await User.findOne({ email: email.toLowerCase() });
     const rollnoExists = await User.findOne({ rollNo: rollNo.toLowerCase() });
     const phoneExists = await User.findOne({ phoneNumber: phoneNumber });
+    
     if (phoneExists) {
       return res.status(400).json({message : 'User with this Phone Number already exists'});
     }
@@ -202,19 +208,93 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    const user = await User.create({
+    // Store user data temporarily instead of creating in database
+    const userData = {
       firstName,
       middleName,
       lastName,
       email: email.toLowerCase(),
       password,
-      rollNo : rollNo.toLowerCase(),
+      rollNo: rollNo.toLowerCase(),
       college,
       department,
       gender,
       phoneNumber,
+      timestamp: Date.now()
+    };
+
+    // Store in temporary storage (use email as key)
+    pendingUsers.set(email.toLowerCase(), userData);
+    console.log('Stored pending user for:', email.toLowerCase());
+    console.log('Total pending users:', pendingUsers.size);
+
+    // Clean up old pending users (older than 1 hour)
+    for (const [key, value] of pendingUsers.entries()) {
+      if (Date.now() - value.timestamp > 3600000) { // 1 hour
+        pendingUsers.delete(key);
+      }
+    }
+
+    res.status(201).json({
+      message: 'Registration data saved. Please verify your email to complete registration.',
+      emailSent: true
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error during registration' });
+  }
+};
+
+// New endpoint to handle email verification
+const verifyEmail = async (req, res) => {
+  const { email, firebaseUid } = req.body;
+  console.log('verifyEmail called with:', { email, firebaseUid });
+  console.log('Current pendingUsers:', Array.from(pendingUsers.keys()));
+
+  try {
+    // Get pending user data
+    const userData = pendingUsers.get(email.toLowerCase());
+    console.log('Found userData for', email.toLowerCase(), ':', userData ? 'Yes' : 'No');
+    
+    if (!userData) {
+      console.log('No pending user data found');
+      return res.status(400).json({ message: 'No pending registration found for this email' });
+    }
+
+    // Check if user already exists (double check)
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      console.log('User already exists, removing from pending');
+      pendingUsers.delete(email.toLowerCase());
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    console.log('Creating user with data:', {
+      email: userData.email,
+      firstName: userData.firstName,
+      firebaseUid
+    });
+
+    // Create user in database now that email is verified
+    const user = await User.create({
+      firstName: userData.firstName,
+      middleName: userData.middleName,
+      lastName: userData.lastName,
+      email: userData.email,
+      password: userData.password,
+      rollNo: userData.rollNo,
+      college: userData.college,
+      department: userData.department,
+      gender: userData.gender,
+      phoneNumber: userData.phoneNumber,
+      firebaseUid: firebaseUid, // Add Firebase UID
       isVerified: true,
     });
+
+    // Remove from pending users
+    pendingUsers.delete(email.toLowerCase());
+    console.log('User created successfully:', user._id);
 
     if (user) {
       res.status(201).json({
@@ -225,13 +305,15 @@ const registerUser = async (req, res) => {
         role: user.role,
         token: generateToken(user._id, true),
         profileComplete: true,
+        message: 'Email verified and registration completed successfully'
       });
     } else {
-      res.status(400).json({ message: 'Invalid user data' });
+      res.status(400).json({ message: 'Failed to create user' });
     }
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error during registration' });
+    console.error('Error in verifyEmail:', error);
+    res.status(500).json({ message: 'Server error during email verification' });
   }
 };
 
@@ -319,4 +401,4 @@ const handleGoogleSignIn = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser, handleGoogleSignIn };
+module.exports = { registerUser, loginUser, handleGoogleSignIn, verifyEmail };

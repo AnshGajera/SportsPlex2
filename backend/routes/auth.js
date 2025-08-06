@@ -44,7 +44,8 @@ const { protect } = require("../middleware/authMiddleware");
 const { 
   registerUser, 
   loginUser,
-  handleGoogleSignIn
+  handleGoogleSignIn,
+  verifyEmail
 } = require('../controllers/authController');
 
 // @route   POST /api/auth/register
@@ -58,6 +59,10 @@ router.post('/login', loginUser);
 // @route   POST /api/auth/google
 // @desc    Authenticate or register a user via Google Sign-In
 router.post('/google', handleGoogleSignIn);
+
+// @route   POST /api/auth/verify-email
+// @desc    Complete user registration after email verification
+router.post('/verify-email', verifyEmail);
 // router.get("/Home", protect, dashboardHandler);
 
 module.exports = router;

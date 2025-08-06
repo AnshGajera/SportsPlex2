@@ -7,7 +7,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext'; // Make sure this path is correct
 import api from '../services/api'; // Import your API service
 import { useNavigate } from 'react-router-dom'; // For redirection
-import { auth } from '../firebase/config';
+import { auth, sendVerificationEmail } from '../firebase/config';
 
 // --- Data for Dropdowns ---
 const colleges = ['CSPIT', 'PDPIAS', 'RPCP', 'CMPICA', 'DEPSTAR', 'MTIN'];
@@ -99,28 +99,41 @@ const Login = () => {
         }
       } else {
         // --- Handle Register API Call ---
+        
+        // First, store registration data in backend temporarily (not in database yet)
         const response = await api.post('/auth/register', data);
-        setMessage('Registration successful! Logging you in...');
-
-        // Create user in Firebase Auth and send verification email
-        try {
-          const { createUserWithEmailAndPassword, sendEmailVerification } = await import('firebase/auth');
-          const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-          await sendEmailVerification(userCredential.user);
-        } catch (firebaseError) {
-          // If user already exists in Firebase, skip
-          if (firebaseError.code !== 'auth/email-already-in-use') {
-            setMessage('Firebase registration error: ' + (firebaseError.message || 'Unknown error'));
+        
+        if (response.data.emailSent) {
+          // Create user in Firebase Auth and send verification email
+          try {
+            const { createUserWithEmailAndPassword } = await import('firebase/auth');
+            const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+            
+            // Send verification email using our custom function
+            const result = await sendVerificationEmail(userCredential.user);
+            
+            if (result.success) {
+              setMessage('Registration successful! Please check your email and verify to complete registration.');
+              // Navigate to verification page
+              navigate('/verify-email', { replace: true });
+            } else {
+              setMessage('Registration successful but email verification failed: ' + result.error);
+              // Still navigate to verification page
+              navigate('/verify-email', { replace: true });
+            }
+            
+          } catch (firebaseError) {
+            if (firebaseError.code === 'auth/email-already-in-use') {
+              setMessage('Email already exists. Please try logging in instead.');
+            } else {
+              setMessage('Firebase registration error: ' + (firebaseError.message || 'Unknown error'));
+            }
             setLoading(false);
             return;
           }
+        } else {
+          setMessage(response.data.message || 'Registration failed');
         }
-
-        // Update context and local storage
-        setCurrentUser(response.data);
-        localStorage.setItem('userInfo', JSON.stringify(response.data));
-        // Redirect to verifyEmail after registration
-        navigate('/verifyEmail', { state: { email: data.email } });
       }
     } catch (error) {
       let errorMessage = error.response?.data?.message || 'An unexpected error occurred.';
