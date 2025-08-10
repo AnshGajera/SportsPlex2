@@ -99,43 +99,100 @@ const Login = () => {
         }
       } else {
         // --- Handle Register API Call ---
-        const response = await api.post('/auth/register', data);
-        setMessage('Registration successful! Logging you in...');
+        setMessage('Creating your account...');
 
-        // Create user in Firebase Auth and send verification email
+        // Create user in Firebase Auth and send verification email FIRST
         try {
           const { createUserWithEmailAndPassword, sendEmailVerification } = await import('firebase/auth');
           const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
           await sendEmailVerification(userCredential.user);
+          
+          setMessage('Registration successful! Please verify your email to complete registration.');
+          
+          // Redirect to verifyEmail with pending user data (don't create in database yet)
+          navigate('/verifyEmail', { 
+            state: { 
+              email: data.email,
+              pendingUserData: data  // Pass the registration data to be used after verification
+            } 
+          });
+          
         } catch (firebaseError) {
-          // If user already exists in Firebase, skip
-          if (firebaseError.code !== 'auth/email-already-in-use') {
-            setMessage('Firebase registration error: ' + (firebaseError.message || 'Unknown error'));
-            setLoading(false);
-            return;
+          let errorMessage = 'Registration failed. Please try again.';
+          
+          if (firebaseError.code === 'auth/email-already-in-use') {
+            errorMessage = 'An account with this email already exists. Please login instead.';
+          } else if (firebaseError.code === 'auth/weak-password') {
+            errorMessage = 'Password is too weak. Please use a stronger password.';
+          } else if (firebaseError.code === 'auth/invalid-email') {
+            errorMessage = 'Invalid email address. Please check and try again.';
           }
+          
+          setMessage(errorMessage);
+          setLoading(false);
+          return;
         }
-
-        // Update context and local storage
-        setCurrentUser(response.data);
-        localStorage.setItem('userInfo', JSON.stringify(response.data));
-        // Redirect to verifyEmail after registration
-        navigate('/verifyEmail', { state: { email: data.email } });
       }
     } catch (error) {
-      let errorMessage = error.response?.data?.message || 'An unexpected error occurred.';
+      let errorMessage = 'An unexpected error occurred. Please try again.';
       
-      // Handle Firebase specific errors
-      if (error.code === 'auth/wrong-password') {
-        errorMessage = 'Incorrect password.';
-      } else if (error.code === 'auth/user-not-found') {
-        errorMessage = 'No account found with this email.';
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Invalid email format.';
+      // Handle Firebase authentication errors
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/wrong-password':
+            errorMessage = 'Incorrect password. Please check your password and try again.';
+            break;
+          case 'auth/user-not-found':
+            errorMessage = 'No account found with this email address. Please check your email or register for a new account.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Invalid email format. Please enter a valid email address.';
+            break;
+          case 'auth/user-disabled':
+            errorMessage = 'This account has been disabled. Please contact support.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Too many failed login attempts. Please try again later.';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = 'Network error. Please check your internet connection and try again.';
+            break;
+          case 'auth/invalid-credential':
+            errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+            break;
+          default:
+            errorMessage = 'Authentication failed. Please check your credentials and try again.';
+        }
+      }
+      // Handle backend API errors
+      else if (error.response) {
+        const status = error.response.status;
+        const backendMessage = error.response.data?.message;
+        
+        switch (status) {
+          case 401:
+            errorMessage = backendMessage || 'Invalid email or password. Please check your credentials.';
+            break;
+          case 403:
+            errorMessage = backendMessage || 'Access denied. Please check your permissions.';
+            break;
+          case 404:
+            errorMessage = 'Account not found. Please check your email address.';
+            break;
+          case 500:
+            errorMessage = 'Server error. Please try again later.';
+            break;
+          default:
+            errorMessage = backendMessage || 'Login failed. Please try again.';
+        }
+      }
+      // Handle network or other errors
+      else if (error.request) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
       }
       
       setMessage(errorMessage);
-      console.error('Submission failed:', error);
+      console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
@@ -226,8 +283,32 @@ const Login = () => {
 
 
         {message && (
-          <div className={`mb-4 p-3 rounded-md text-center text-sm ${message.includes('successful') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-            {message}
+          <div className={`mb-4 p-4 rounded-lg border text-sm ${
+            message.includes('successful') 
+              ? 'bg-green-50 text-green-800 border-green-200' 
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}>
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                {message.includes('successful') ? (
+                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+              <div className="ml-3">
+                <p className="font-medium">
+                  {message.includes('successful') ? 'Success' : 'Error'}
+                </p>
+                <p className="mt-1 text-sm opacity-90">
+                  {message}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -236,18 +317,62 @@ const Login = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="email" className="block text-gray-700 font-medium mb-1">Email</label>
-                <input id="email" type="email" {...register('email')} className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="Enter your email" />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
+                <input 
+                  id="email" 
+                  type="email" 
+                  {...register('email')} 
+                  className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                    errors.email 
+                      ? 'border-red-300 focus:ring-red-200 focus:border-red-400' 
+                      : 'border-gray-300 focus:ring-blue-200 focus:border-blue-400'
+                  }`}
+                  placeholder="Enter your email address" 
+                />
+                {errors.email && (
+                  <p className="text-red-600 text-sm mt-1 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
               <div>
                 <label htmlFor="password" className="block text-gray-700 font-medium mb-1">Password</label>
                 <div className="relative">
-                  <input id="password" type={showPassword ? 'text' : 'password'} {...register('password')} className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="Enter password" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                  <input 
+                    id="password" 
+                    type={showPassword ? 'text' : 'password'} 
+                    {...register('password')} 
+                    className={`w-full px-4 py-2 pr-12 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
+                      errors.password 
+                        ? 'border-red-300 focus:ring-red-200 focus:border-red-400' 
+                        : 'border-gray-300 focus:ring-blue-200 focus:border-blue-400'
+                    }`}
+                    placeholder="Enter your password" 
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
                 </div>
-                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
+                {errors.password && (
+                  <p className="text-red-600 text-sm mt-1 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <label className="flex items-center">
+                  <input type="checkbox" className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" />
+                  <span className="ml-2 text-sm text-gray-600">Remember me</span>
+                </label>
+                <a href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                  Forgot your password?
+                </a>
               </div>
 
             </div>
