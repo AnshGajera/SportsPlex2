@@ -255,6 +255,7 @@ const loginUser = async (req, res) => {
       res.json({
         _id: user._id,
         firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
         token: generateToken(user._id, profileComplete),
@@ -280,6 +281,7 @@ const handleGoogleSignIn = async (req, res) => {
       res.json({
         _id: user._id,
         firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
         token: generateToken(user._id, profileComplete),
@@ -304,6 +306,7 @@ const handleGoogleSignIn = async (req, res) => {
         res.status(201).json({
           _id: user._id,
           firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           role: user.role,
           token: generateToken(user._id, false),

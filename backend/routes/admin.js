@@ -216,4 +216,89 @@ router.get('/users/search', protect, adminMiddleware, async (req, res) => {
   }
 });
 
+// Promote student to student_head (admin only)
+router.put('/users/:userId/promote', protect, adminMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Find the user to promote
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if user is already a student_head or admin
+    if (user.role === 'student_head') {
+      return res.status(400).json({ message: 'User is already a student head' });
+    }
+    
+    if (user.role === 'admin') {
+      return res.status(400).json({ message: 'Cannot change admin role' });
+    }
+    
+    // Update user role to student_head
+    user.role = 'student_head';
+    await user.save();
+    
+    // Email will be sent from frontend using EmailJS
+    console.log(`User ${user.firstName} ${user.lastName} promoted to student_head`);
+    
+    res.json({
+      message: 'User successfully promoted to student head',
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error promoting user:', error);
+    res.status(500).json({ message: 'Server error while promoting user' });
+  }
+});
+
+// Demote student_head to student (admin only)
+router.put('/users/:userId/demote', protect, adminMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Find the user to demote
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if user is currently a student_head
+    if (user.role !== 'student_head') {
+      return res.status(400).json({ message: 'User is not a student head' });
+    }
+    
+    // Update user role to student
+    user.role = 'student';
+    await user.save();
+    
+    // Email will be sent from frontend using EmailJS
+    console.log(`User ${user.firstName} ${user.lastName} demoted to student`);
+    
+    res.json({
+      message: 'User successfully demoted to student',
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error demoting user:', error);
+    res.status(500).json({ message: 'Server error while demoting user' });
+  }
+});
+
 module.exports = router;
