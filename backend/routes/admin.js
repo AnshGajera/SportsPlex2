@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
+const StudentHeadRequest = require('../models/studentHeadRequest');
 const { protect } = require('../middleware/authMiddleware');
 
 // Middleware to check if user is admin
@@ -156,35 +157,7 @@ router.delete('/users/:userId', protect, adminMiddleware, async (req, res) => {
   }
 });
 
-// Get user statistics (admin only)
-router.get('/stats', protect, adminMiddleware, async (req, res) => {
-  try {
-    const stats = await User.aggregate([
-      {
-        $group: {
-          _id: '$role',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    const totalUsers = await User.countDocuments();
-    
-    const formattedStats = {
-      total: totalUsers,
-      students: stats.find(s => s._id === 'student')?.count || 0,
-      student_heads: stats.find(s => s._id === 'student_head')?.count || 0,
-      admins: stats.find(s => s._id === 'admin')?.count || 0
-    };
-
-    res.json(formattedStats);
-  } catch (error) {
-    console.error('Error fetching user stats:', error);
-    res.status(500).json({ message: 'Server error while fetching statistics' });
-  }
-});
-
-// Search users (admin only)
+// Search users (admin only) - MUST be before /users/:userId to avoid route conflicts
 router.get('/users/search', protect, adminMiddleware, async (req, res) => {
   try {
     const { q, role } = req.query;
@@ -213,6 +186,52 @@ router.get('/users/search', protect, adminMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error searching users:', error);
     res.status(500).json({ message: 'Server error while searching users' });
+  }
+});
+
+// Get single user by ID with complete data including certificates (admin only)
+router.get('/users/:userId', protect, adminMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Server error while fetching user' });
+  }
+});
+
+// Get user statistics (admin only)
+router.get('/stats', protect, adminMiddleware, async (req, res) => {
+  try {
+    const stats = await User.aggregate([
+      {
+        $group: {
+          _id: '$role',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const totalUsers = await User.countDocuments();
+    
+    const formattedStats = {
+      total: totalUsers,
+      students: stats.find(s => s._id === 'student')?.count || 0,
+      student_heads: stats.find(s => s._id === 'student_head')?.count || 0,
+      admins: stats.find(s => s._id === 'admin')?.count || 0
+    };
+
+    res.json(formattedStats);
+  } catch (error) {
+    console.error('Error fetching user stats:', error);
+    res.status(500).json({ message: 'Server error while fetching statistics' });
   }
 });
 
@@ -298,6 +317,76 @@ router.put('/users/:userId/demote', protect, adminMiddleware, async (req, res) =
   } catch (error) {
     console.error('Error demoting user:', error);
     res.status(500).json({ message: 'Server error while demoting user' });
+  }
+});
+
+// Get all student head requests (admin only)
+router.get('/student-head-requests', protect, adminMiddleware, async (req, res) => {
+  try {
+    const requests = await StudentHeadRequest.find()
+      .populate('student', 'firstName lastName email department college rollNo')
+      .populate('reviewedBy', 'firstName lastName')
+      .sort({ submittedAt: -1 });
+
+    res.json(requests);
+
+  } catch (error) {
+    console.error('Error fetching student head requests:', error);
+    res.status(500).json({ message: 'Server error while fetching requests' });
+  }
+});
+
+// Approve/Reject student head request (admin only)
+router.put('/student-head-requests/:requestId', protect, adminMiddleware, async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { action, adminNotes } = req.body; // action: 'approve' or 'reject'
+    
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject"' });
+    }
+
+    // Find the request
+    const request = await StudentHeadRequest.findById(requestId)
+      .populate('student', 'firstName lastName email');
+
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'Request has already been reviewed' });
+    }
+
+    // Update request status
+    request.status = action === 'approve' ? 'approved' : 'rejected';
+    request.reviewedAt = new Date();
+    request.reviewedBy = req.user._id;
+    request.adminNotes = adminNotes || '';
+
+    await request.save();
+
+    // If approved, promote the student
+    if (action === 'approve') {
+      const student = await User.findById(request.student._id);
+      student.role = 'student_head';
+      await student.save();
+    }
+
+    res.json({
+      message: `Request ${action}d successfully`,
+      request: {
+        _id: request._id,
+        status: request.status,
+        reviewedAt: request.reviewedAt,
+        adminNotes: request.adminNotes,
+        student: request.student
+      }
+    });
+
+  } catch (error) {
+    console.error('Error processing student head request:', error);
+    res.status(500).json({ message: 'Server error while processing request' });
   }
 });
 

@@ -211,7 +211,7 @@ const registerUser = async (req, res) => {
       rollNo : rollNo.toLowerCase(),
       college,
       department,
-      gender,
+      gender: gender.toLowerCase(),
       phoneNumber,
       isVerified: true,
     });

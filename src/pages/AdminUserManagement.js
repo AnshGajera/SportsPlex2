@@ -5,6 +5,7 @@ import SearchBar from '../components/SearchBar';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { sendPromotionEmail, sendDemotionEmail } from '../services/emailService';
+import StudentHeadRequests from '../components/StudentHead/StudentHeadRequests';
 
 const AdminUserManagement = () => {
   const location = useLocation();
@@ -47,34 +48,15 @@ const AdminUserManagement = () => {
   // Fetch users data from backend
   useEffect(() => {
     const fetchUsers = async () => {
-      // Debug localStorage and user info
-      const storedUser = localStorage.getItem('userInfo');
-      console.log('=== ADMIN USER MANAGEMENT DEBUG ===');
-      console.log('Stored user in localStorage:', storedUser);
-      console.log('Parsed stored user:', storedUser ? JSON.parse(storedUser) : null);
-      console.log('Current user from context:', currentUser);
-      
-      // Check if user is logged in and is admin
-      if (!currentUser) {
-        console.log('No current user found');
-        return;
-      }
-      
-      console.log('Current user:', currentUser);
-      console.log('User role:', currentUser.role);
-      
-      if (currentUser.role !== 'admin') {
-        console.log('User is not admin, role:', currentUser.role);
+      if (!currentUser || currentUser.role !== 'admin') {
         setUsers([]);
         return;
       }
 
       setLoading(true);
       try {
-        console.log('Fetching users as admin...');
         const response = await api.get('/admin/users');
         const usersData = response.data;
-        console.log('Users fetched successfully:', usersData.length);
         setUsers(usersData);
         
         // Update analytics based on real data
@@ -112,21 +94,6 @@ const AdminUserManagement = () => {
         
       } catch (error) {
         console.error('Error fetching users:', error);
-        console.error('Error response:', error.response);
-        console.error('Error status:', error.response?.status);
-        console.error('Error message:', error.response?.data?.message);
-        
-        if (error.response?.status === 401) {
-          console.log('Authentication failed - checking token...');
-          const storedUser = localStorage.getItem('userInfo');
-          if (storedUser) {
-            const parsedUser = JSON.parse(storedUser);
-            console.log('Token in storage:', parsedUser.token);
-          } else {
-            console.log('No user data in localStorage');
-          }
-        }
-        
         setUsers([]);
       } finally {
         setLoading(false);
@@ -134,7 +101,7 @@ const AdminUserManagement = () => {
     };
     
     fetchUsers();
-  }, [currentUser]); // Add dependency on currentUser
+  }, [currentUser]);
 
   // Promote student to student_head
   const promoteToStudentHead = async (userId, userName) => {
@@ -273,13 +240,6 @@ const AdminUserManagement = () => {
     setFilteredUsers(filtered);
   }, [users, activeTab]);
 
-  // Mock student data (remove this)
-  const students = [
-    { id: 1, name: 'John Doe', email: 'john@example.com' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-    { id: 3, name: 'Alex Johnson', email: 'alex@example.com' }
-  ];
-
   // TODO: Fetch analytics data from backend
   // useEffect(() => {
   //   const fetchAnalytics = async () => {
@@ -311,6 +271,13 @@ const AdminUserManagement = () => {
     setSearchResults(foundUsers);
   };
 
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    // Clear search when switching tabs
+    setSearchTerm('');
+    setSearchResults([]);
+  };
+
   const handleViewUser = (user) => {
     setSelectedUser(user);
     setShowUserModal(true);
@@ -331,7 +298,7 @@ const AdminUserManagement = () => {
     const urlParams = new URLSearchParams(location.search);
     const tab = urlParams.get('tab');
     if (tab === 'student-head-requests') {
-      setActiveTab('studentHeadRequests');
+      handleTabChange('studentHeadRequests');
     }
   }, [location.search]);
 
@@ -425,25 +392,25 @@ const AdminUserManagement = () => {
         <div className="tabs" style={{ flexShrink: 0 }}>
           <button
             className={`tab ${activeTab === 'admins' ? 'active' : ''}`}
-            onClick={() => setActiveTab('admins')}
+            onClick={() => handleTabChange('admins')}
           >
             Admins
           </button>
           <button
             className={`tab ${activeTab === 'students' ? 'active' : ''}`}
-            onClick={() => setActiveTab('students')}
+            onClick={() => handleTabChange('students')}
           >
             Students
           </button>
           <button
             className={`tab ${activeTab === 'studentHeads' ? 'active' : ''}`}
-            onClick={() => setActiveTab('studentHeads')}
+            onClick={() => handleTabChange('studentHeads')}
           >
             Student Heads
           </button>
           <button
             className={`tab ${activeTab === 'studentHeadRequests' ? 'active' : ''}`}
-            onClick={() => setActiveTab('studentHeadRequests')}
+            onClick={() => handleTabChange('studentHeadRequests')}
           >
             Student Head Requests
           </button>
@@ -457,15 +424,18 @@ const AdminUserManagement = () => {
           transform: 'translateY(-7px)'
         }}>
           <SearchBar
-            placeholder="Search student by name or email..."
+            placeholder={activeTab === 'studentHeadRequests' ? "Search will be available in other tabs..." : "Search user by name or email..."}
             value={searchTerm}
             onChange={handleSearch}
+            disabled={activeTab === 'studentHeadRequests'}
           />
         </div>
       </div>
 
       {/* Content based on active tab */}
-      {loading ? (
+      {activeTab === 'studentHeadRequests' ? (
+        <StudentHeadRequests />
+      ) : loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}>
           <div style={{ fontSize: '18px', color: '#6b7280' }}>Loading users...</div>
         </div>
@@ -494,6 +464,7 @@ const AdminUserManagement = () => {
                     user={user} 
                     onViewDetails={handleViewUser} 
                     onPromote={promoteToStudentHead} 
+                    onDemote={demoteToStudent}
                   />
                 ))}
               </div>
@@ -542,24 +513,19 @@ const AdminUserManagement = () => {
                   gap: '16px' 
                 }}>
                   {filteredUsers.map(user => (
-                    <UserCard key={user._id} user={user} onViewDetails={handleViewUser} onPromote={promoteToStudentHead} onDemote={demoteToStudent} />
+                    <UserCard 
+                      key={user._id} 
+                      user={user} 
+                      onViewDetails={handleViewUser} 
+                      onPromote={promoteToStudentHead} 
+                      onDemote={demoteToStudent} 
+                    />
                   ))}
                 </div>
               )}
             </div>
           )}
         </>
-      )}
-
-      {activeTab === 'studentHeadRequests' && (
-        <div>
-          <h3 style={{ marginBottom: '16px', color: '#374151' }}>Student Head Requests</h3>
-          <div style={{ padding: '16px', background: '#f3f4f6', borderRadius: '8px' }}>
-            <p style={{ color: '#6b7280', textAlign: 'center' }}>
-              Student head request management functionality will be implemented here.
-            </p>
-          </div>
-        </div>
       )}
 
       {/* User Details Modal */}

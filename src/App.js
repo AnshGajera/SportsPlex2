@@ -26,6 +26,7 @@ import UserClubs from './pages/UserClubs';
 import UserMatches from './pages/UserMatches';
 import UserAnnouncements from './pages/UserAnnouncements';
 import UserProfile from './pages/UserProfile';
+import StudentHeadRequest from './pages/StudentHeadRequest';
 
 // Common/Legacy Pages
 import Equipment from './pages/Equipment';
@@ -77,6 +78,7 @@ function App() {
           <Route path="/user/matches" element={<><Navbar /><ProtectedRoute><UserMatches /></ProtectedRoute></>} />
           <Route path="/user/announcements" element={<><Navbar /><ProtectedRoute><UserAnnouncements /></ProtectedRoute></>} />
           <Route path="/user/profile" element={<><Navbar /><ProtectedRoute><UserProfile /></ProtectedRoute></>} />
+          <Route path="/user/student-head-request" element={<><Navbar /><ProtectedRoute><StudentHeadRequest /></ProtectedRoute></>} />
           
           {/* Legacy/Common Routes (keep for backward compatibility) */}
           <Route path="/Home" element={<><Navbar /><ProtectedRoute><UserDashboard /></ProtectedRoute></>} />
@@ -92,6 +94,7 @@ function App() {
           <Route path="/student-head" element={<><Navbar /><ProtectedRoute><StudentHead /></ProtectedRoute></>} />
           <Route path="/admin/student-head-requests" element={<><Navbar /><ProtectedRoute adminOnly={true}><StudentHeadRequests /></ProtectedRoute></>} />
           <Route path="/admin/requests" element={<><Navbar /><ProtectedRoute adminOnly={true}><ApproveRequests /></ProtectedRoute></>} />
+          <Route path="/user-management" element={<><Navbar /><ProtectedRoute adminOnly={true}><UserManagement /></ProtectedRoute></>} />
         </Routes>
       </Router>
     </AuthProvider>

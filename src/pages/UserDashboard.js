@@ -1,14 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Users, Trophy, Bell } from 'lucide-react';
+import { Package, Users, Trophy, Bell, Crown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 const UserDashboard = () => {
   const { currentUser } = useAuth();
+  const [canRequestStudentHead, setCanRequestStudentHead] = useState(false);
+  const [hasRequestedStudentHead, setHasRequestedStudentHead] = useState(false);
+  
   console.log('Current user data:', currentUser); // Add logging to debug
   const firstName = currentUser?.firstName || '';
   const lastName = currentUser?.lastName || '';
   const userName = currentUser ? `${firstName} ${lastName}`.trim() || 'User' : 'User';
+
+  // Check if user can request student head role
+  useEffect(() => {
+    const checkStudentHeadEligibility = async () => {
+      if (!currentUser || currentUser.role !== 'student') {
+        return;
+      }
+
+      try {
+        const token = JSON.parse(localStorage.getItem('userInfo'))?.token;
+        const response = await api.get('/student-head-requests/can-request', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        setCanRequestStudentHead(response.data.canRequest);
+        
+        // Check if user has any request
+        const requestResponse = await api.get('/student-head-requests/my-request', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        setHasRequestedStudentHead(!!requestResponse.data.request);
+      } catch (error) {
+        console.error('Error checking student head eligibility:', error);
+      }
+    };
+
+    checkStudentHeadEligibility();
+  }, [currentUser]);
   
   const stats = [
     { 
@@ -37,7 +70,7 @@ const UserDashboard = () => {
     }
   ];
 
-  const quickActions = [
+  const baseQuickActions = [
     {
       icon: Package,
       title: 'Request Equipment',
@@ -67,6 +100,18 @@ const UserDashboard = () => {
       color: '#fcdcfbff' // Light Pink
     }
   ];
+
+  // Add Student Head request action for eligible students
+  const quickActions = [...baseQuickActions];
+  if (currentUser?.role === 'student' && (canRequestStudentHead || hasRequestedStudentHead)) {
+    quickActions.push({
+      icon: Crown,
+      title: hasRequestedStudentHead ? 'View Request Status' : 'Request Student Head',
+      description: hasRequestedStudentHead ? 'Check your application status' : 'Apply for Student Head position',
+      link: '/user/student-head-request',
+      color: '#fbbf24' // Gold
+    });
+  }
 
   return (
     <div className="container" style={{ padding: '32px 20px' }}>
@@ -149,59 +194,64 @@ const UserDashboard = () => {
             const IconComponent = action.icon;
             // Use the card's color for gradient and shadow
             const cardColor = action.color || '#f3f4f6';
+            
+            const cardContent = (
+              <div className="card" style={{
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                height: '100%',
+                background: `linear-gradient(135deg, #fff 0%, ${cardColor} 100%)`,
+                boxShadow: `0 2px 12px ${cardColor}55`,
+                border: 'none',
+                borderRadius: '14px',
+                padding: '32px 28px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
+                e.currentTarget.style.boxShadow = `0 4px 24px ${cardColor}`;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = `0 2px 12px ${cardColor}55`;
+              }}
+              >
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    marginBottom: '18px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <IconComponent size={32} color="#222" />
+                </div>
+                <h3 style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 500,
+                  marginBottom: '10px',
+                  color: '#111',
+                }}>
+                  {action.title}
+                </h3>
+                <p style={{
+                  color: '#444',
+                  fontSize: '1rem',
+                  margin: 0,
+                  fontWeight: 400,
+                }}>
+                  {action.description}
+                </p>
+              </div>
+            );
+
             return (
               <Link key={index} to={action.link} style={{ textDecoration: 'none' }}>
-                <div className="card" style={{
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                  height: '100%',
-                  background: `linear-gradient(135deg, #fff 0%, ${cardColor} 100%)`,
-                  boxShadow: `0 2px 12px ${cardColor}55`,
-                  border: 'none',
-                  borderRadius: '14px',
-                  padding: '32px 28px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-4px) scale(1.03)';
-                  e.currentTarget.style.boxShadow = `0 4px 24px ${cardColor}`;
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = `0 2px 12px ${cardColor}55`;
-                }}
-                >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      marginBottom: '18px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <IconComponent size={32} color="#222" />
-                  </div>
-                  <h3 style={{
-                    fontSize: '1.25rem',
-                    fontWeight: 500,
-                    marginBottom: '10px',
-                    color: '#111',
-                  }}>
-                    {action.title}
-                  </h3>
-                  <p style={{
-                    color: '#444',
-                    fontSize: '1rem',
-                    margin: 0,
-                    fontWeight: 400,
-                  }}>
-                    {action.description}
-                  </p>
-                </div>
+                {cardContent}
               </Link>
             );
           })}
