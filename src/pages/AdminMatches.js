@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trophy, Plus, Play, Calendar, CheckCircle } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import ScheduleMatchModal from '../components/Modals/ScheduleMatchModal';
+import api from '../services/api';
 
 const AdminMatches = () => {
-  const [activeTab, setActiveTab] = useState('live');
+  const [activeTab, setActiveTab] = useState('upcoming');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [analyticsData, setAnalyticsData] = useState([
     {
       icon: Play,
@@ -34,28 +37,48 @@ const AdminMatches = () => {
     }
   ]);
 
-  const liveMatches = [];
-  const upcomingMatches = [];
-  const completedMatches = [];
+  // Fetch matches data from backend
+  useEffect(() => {
+    const fetchMatches = async () => {
+      try {
+        const response = await api.get('/matches');
+        const matchesData = response.data.matches || response.data;
+        setMatches(matchesData);
+        
+        // Update analytics
+        const liveMatches = matchesData.filter(match => match.status === 'live').length;
+        const upcomingMatches = matchesData.filter(match => match.status === 'upcoming').length;
+        const completedMatches = matchesData.filter(match => match.status === 'completed').length;
+        const totalMatches = matchesData.length;
+        
+        setAnalyticsData(prev => [
+          { ...prev[0], count: liveMatches },
+          { ...prev[1], count: upcomingMatches },
+          { ...prev[2], count: completedMatches },
+          { ...prev[3], count: totalMatches }
+        ]);
+      } catch (error) {
+        console.error('Error fetching matches:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // TODO: Fetch analytics data from backend
-  // useEffect(() => {
-  //   const fetchAnalytics = async () => {
-  //     try {
-  //       const response = await api.get('/admin/matches/analytics');
-  //       setAnalyticsData(response.data);
-  //     } catch (error) {
-  //       console.error('Error fetching matches analytics:', error);
-  //     }
-  //   };
-  //   fetchAnalytics();
-  // }, []);
+    fetchMatches();
+  }, []);
 
-  const handleScheduleMatch = (matchData) => {
-    console.log('Scheduling match:', matchData);
-    // TODO: Submit to backend API
-    // Example: api.post('/admin/matches', matchData)
-    // Then refresh the matches list
+  const liveMatches = matches.filter(match => match.status === 'live');
+  const upcomingMatches = matches.filter(match => match.status === 'upcoming');
+  const completedMatches = matches.filter(match => match.status === 'completed');
+
+  const handleScheduleMatch = (newMatch) => {
+    setMatches(prevMatches => [...prevMatches, newMatch]);
+    setAnalyticsData(prev => [
+      prev[0], // Live matches unchanged
+      { ...prev[1], count: prev[1].count + 1 }, // Upcoming +1
+      prev[2], // Completed unchanged
+      { ...prev[3], count: prev[3].count + 1 }  // Total +1
+    ]);
   };
 
   const EmptyState = ({ icon: Icon, title, description, actionButton }) => (
@@ -231,27 +254,45 @@ const AdminMatches = () => {
       </div>
 
       {activeTab === 'live' && (
-        liveMatches.length === 0 ? (
+        loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p>Loading matches...</p>
+          </div>
+        ) : liveMatches.length === 0 ? (
           <EmptyState
-            icon={Trophy}
+            icon={Play}
             title="No live matches at the moment"
             description="There are no matches currently in progress. Check the upcoming matches or schedule a new one."
           />
         ) : (
-          <div className="grid grid-1">
-            {liveMatches.map((match, index) => (
-              <div key={index} className="card">
-                {/* Live match card content */}
-              </div>
-            ))}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '20px',
+            marginTop: '20px'
+          }}>
+            {liveMatches
+              .filter(match => 
+                match.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                match.team1.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((match, index) => (
+                <MatchCard key={match._id || index} match={match} />
+              ))
+            }
           </div>
         )
       )}
 
       {activeTab === 'upcoming' && (
-        upcomingMatches.length === 0 ? (
+        loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p>Loading matches...</p>
+          </div>
+        ) : upcomingMatches.length === 0 ? (
           <EmptyState
-            icon={Trophy}
+            icon={Calendar}
             title="No upcoming matches"
             description="There are no matches scheduled for the future. Schedule a new match to get started."
             actionButton={
@@ -264,30 +305,54 @@ const AdminMatches = () => {
             }
           />
         ) : (
-          <div className="grid grid-1">
-            {upcomingMatches.map((match, index) => (
-              <div key={index} className="card">
-                {/* Upcoming match card content */}
-              </div>
-            ))}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '20px',
+            marginTop: '20px'
+          }}>
+            {upcomingMatches
+              .filter(match => 
+                match.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                match.team1.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((match, index) => (
+                <MatchCard key={match._id || index} match={match} />
+              ))
+            }
           </div>
         )
       )}
 
       {activeTab === 'completed' && (
-        completedMatches.length === 0 ? (
+        loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p>Loading matches...</p>
+          </div>
+        ) : completedMatches.length === 0 ? (
           <EmptyState
-            icon={Trophy}
+            icon={CheckCircle}
             title="No completed matches"
             description="No matches have been completed yet. Once matches are finished, they will appear here."
           />
         ) : (
-          <div className="grid grid-1">
-            {completedMatches.map((match, index) => (
-              <div key={index} className="card">
-                {/* Completed match card content */}
-              </div>
-            ))}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '20px',
+            marginTop: '20px'
+          }}>
+            {completedMatches
+              .filter(match => 
+                match.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                match.team1.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .map((match, index) => (
+                <MatchCard key={match._id || index} match={match} />
+              ))
+            }
           </div>
         )
       )}
@@ -299,6 +364,164 @@ const AdminMatches = () => {
           onSubmit={handleScheduleMatch}
         />
       )}
+    </div>
+  );
+};
+
+// MatchCard component
+const MatchCard = ({ match }) => {
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'live': return '#ef4444';
+      case 'upcoming': return '#3b82f6';
+      case 'completed': return '#10b981';
+      default: return '#6b7280';
+    }
+  };
+
+  return (
+    <div style={{
+      background: '#fff',
+      borderRadius: '12px',
+      border: '1px solid #e5e7eb',
+      overflow: 'hidden',
+      transition: 'all 0.2s ease'
+    }}
+    onMouseEnter={e => {
+      e.currentTarget.style.transform = 'translateY(-2px)';
+      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
+    }}
+    onMouseLeave={e => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = 'none';
+    }}>
+      {/* Match Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        padding: '16px',
+        color: 'white'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '8px'
+        }}>
+          <span style={{
+            padding: '4px 8px',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '500'
+          }}>
+            {match.sport}
+          </span>
+          <span style={{
+            padding: '4px 8px',
+            background: getStatusColor(match.status),
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '500',
+            textTransform: 'capitalize'
+          }}>
+            {match.status}
+          </span>
+        </div>
+        <h3 style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          margin: 0,
+          lineHeight: '1.4'
+        }}>
+          {match.title}
+        </h3>
+      </div>
+      
+      {/* Teams */}
+      <div style={{ padding: '20px 16px' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}>
+          <div style={{ textAlign: 'center', flex: 1 }}>
+            <h4 style={{
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#1f2937',
+              marginBottom: '4px'
+            }}>
+              {match.team1.name}
+            </h4>
+            {match.status === 'completed' && (
+              <span style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#3b82f6'
+              }}>
+                {match.team1.score}
+              </span>
+            )}
+          </div>
+          
+          <div style={{
+            padding: '8px 16px',
+            background: '#f3f4f6',
+            borderRadius: '8px',
+            fontSize: '12px',
+            fontWeight: '500',
+            color: '#6b7280'
+          }}>
+            VS
+          </div>
+          
+          <div style={{ textAlign: 'center', flex: 1 }}>
+            <h4 style={{
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#1f2937',
+              marginBottom: '4px'
+            }}>
+              {match.team2.name}
+            </h4>
+            {match.status === 'completed' && (
+              <span style={{
+                fontSize: '24px',
+                fontWeight: '700',
+                color: '#3b82f6'
+              }}>
+                {match.team2.score}
+              </span>
+            )}
+          </div>
+        </div>
+        
+        {/* Match Details */}
+        <div style={{
+          borderTop: '1px solid #e5e7eb',
+          paddingTop: '12px',
+          fontSize: '14px',
+          color: '#6b7280'
+        }}>
+          <div style={{ marginBottom: '4px' }}>
+            📅 {formatDate(match.matchDate)}
+          </div>
+          <div>
+            📍 {match.venue}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

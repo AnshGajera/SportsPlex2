@@ -81,11 +81,29 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const club = await Club.findById(req.params.id)
-      .populate('createdBy', 'firstName lastName email role')
-      .populate('members.user', 'firstName lastName email role college department rollNo');
+      .populate('createdBy', 'firstName lastName email role college department rollNo phoneNumber')
+      .populate({
+        path: 'members.user'
+        // Temporarily remove select to get all fields and see what's available
+      });
     
     if (!club) {
       return res.status(404).json({ message: 'Club not found' });
+    }
+
+    // Debug: Log the populated member data to see if phoneNumber is included
+    console.log('=== BACKEND CLUB MEMBERS DEBUG ===');
+    if (club.members && club.members.length > 0) {
+      club.members.forEach((member, index) => {
+        console.log(`Member ${index + 1}:`, {
+          name: `${member.user.firstName} ${member.user.lastName}`,
+          email: member.user.email,
+          phoneNumber: member.user.phoneNumber,
+          phoneType: typeof member.user.phoneNumber,
+          userId: member.user._id,
+          fullUser: member.user
+        });
+      });
     }
     
     res.json(club);
@@ -103,7 +121,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
       return res.status(403).json({ message: 'Only admins and student heads can create clubs' });
     }
     
-    const { name, description, category } = req.body;
+    const { name, description, category, contactEmail, maxMembers, requirements, status } = req.body;
     
     // Validate required fields
     if (!name || !description || !category) {
@@ -121,8 +139,20 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
       name: name.trim(),
       description: description.trim(),
       category: category.trim(),
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      isActive: true // Always set to active
     };
+
+    // Add optional fields if provided
+    if (contactEmail) {
+      clubData.contactEmail = contactEmail.trim();
+    }
+    if (maxMembers) {
+      clubData.maxMembers = parseInt(maxMembers);
+    }
+    if (requirements) {
+      clubData.requirements = requirements.trim();
+    }
     
     // Add image path if uploaded
     if (req.file) {
@@ -145,7 +175,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     await club.populate('createdBy', 'firstName lastName email');
     await club.populate('members.user', 'firstName lastName email');
     
-    res.status(201).json({ message: 'Club created successfully', club });
+    res.status(201).json(club);
   } catch (error) {
     console.error('Error creating club:', error);
     
@@ -311,6 +341,104 @@ router.post('/:id/leave', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error leaving club:', error);
     res.status(500).json({ message: 'Failed to leave club', error: error.message });
+  }
+});
+
+// DELETE /api/clubs/:id/members/:memberId - Remove member from club (admin only)
+router.delete('/:id/members/:memberId', authMiddleware, async (req, res) => {
+  try {
+    const club = await Club.findById(req.params.id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club not found' });
+    }
+
+    // Check permissions - only system admin or club admin can remove members
+    const isSystemAdmin = req.user.role === 'admin';
+    const isClubAdmin = club.members.some(member => 
+      member.user.toString() === req.user._id.toString() && member.role === 'admin'
+    );
+
+    if (!isSystemAdmin && !isClubAdmin) {
+      return res.status(403).json({ message: 'Only admins can remove members' });
+    }
+
+    // Find and remove the member
+    const memberIndex = club.members.findIndex(member => member.user.toString() === req.params.memberId);
+    
+    if (memberIndex === -1) {
+      return res.status(404).json({ message: 'Member not found in this club' });
+    }
+
+    // Prevent removing the last admin (unless it's a system admin doing it)
+    const memberToRemove = club.members[memberIndex];
+    if (memberToRemove.role === 'admin') {
+      const adminCount = club.members.filter(m => m.role === 'admin').length;
+      if (adminCount === 1 && !isSystemAdmin) {
+        return res.status(400).json({ message: 'Cannot remove the last admin of the club' });
+      }
+    }
+
+    club.members.splice(memberIndex, 1);
+    await club.save();
+
+    res.json({ message: 'Member removed successfully' });
+  } catch (error) {
+    console.error('Error removing member:', error);
+    res.status(500).json({ message: 'Failed to remove member', error: error.message });
+  }
+});
+
+// PUT /api/clubs/:id/members/:memberId/role - Update member role (admin only)
+router.put('/:id/members/:memberId/role', authMiddleware, async (req, res) => {
+  try {
+    const { role } = req.body;
+    
+    if (!['member', 'moderator', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Must be member, moderator, or admin' });
+    }
+
+    const club = await Club.findById(req.params.id);
+    
+    if (!club) {
+      return res.status(404).json({ message: 'Club not found' });
+    }
+
+    // Check permissions - only system admin or club admin can change roles
+    const isSystemAdmin = req.user.role === 'admin';
+    const isClubAdmin = club.members.some(member => 
+      member.user.toString() === req.user._id.toString() && member.role === 'admin'
+    );
+
+    if (!isSystemAdmin && !isClubAdmin) {
+      return res.status(403).json({ message: 'Only admins can change member roles' });
+    }
+
+    // Find the member
+    const memberIndex = club.members.findIndex(member => member.user.toString() === req.params.memberId);
+    
+    if (memberIndex === -1) {
+      return res.status(404).json({ message: 'Member not found in this club' });
+    }
+
+    const currentMember = club.members[memberIndex];
+    
+    // Prevent removing admin role if it's the last admin (unless system admin)
+    if (currentMember.role === 'admin' && role !== 'admin') {
+      const adminCount = club.members.filter(m => m.role === 'admin').length;
+      if (adminCount === 1 && !isSystemAdmin) {
+        return res.status(400).json({ message: 'Cannot remove admin role from the last admin of the club' });
+      }
+    }
+
+    // Update the role
+    club.members[memberIndex].role = role;
+    await club.save();
+
+    res.json({ message: 'Member role updated successfully', member: club.members[memberIndex] });
+  } catch (error) {
+    console.error('Error updating member role:', error);
+    res.status(500).json({ message: 'Failed to update member role', error: error.message });
   }
 });
 

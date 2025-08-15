@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
 const adminRoutes = require('./routes/admin');
 const clubRoutes = require('./routes/clubs');
+const matchRoutes = require('./routes/matches');
 const studentHeadRequestRoutes = require('./routes/studentHeadRequests');
 
 app.use(cors());
@@ -21,6 +22,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/clubs', clubRoutes);
+app.use('/api/matches', matchRoutes);
 app.use('/api/student-head-requests', studentHeadRequestRoutes);
 
 const uri = 'mongodb+srv://yashcoltd:pixmamg2576@charusatcomplex.qcqgdez.mongodb.net/?retryWrites=true&w=majority&appName=charusatComplex';

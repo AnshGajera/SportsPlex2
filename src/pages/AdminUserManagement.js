@@ -271,13 +271,6 @@ const AdminUserManagement = () => {
     setSearchResults(foundUsers);
   };
 
-  const handleTabChange = (tabName) => {
-    setActiveTab(tabName);
-    // Clear search when switching tabs
-    setSearchTerm('');
-    setSearchResults([]);
-  };
-
   const handleViewUser = (user) => {
     setSelectedUser(user);
     setShowUserModal(true);
@@ -298,7 +291,7 @@ const AdminUserManagement = () => {
     const urlParams = new URLSearchParams(location.search);
     const tab = urlParams.get('tab');
     if (tab === 'student-head-requests') {
-      handleTabChange('studentHeadRequests');
+      setActiveTab('studentHeadRequests');
     }
   }, [location.search]);
 
@@ -392,25 +385,25 @@ const AdminUserManagement = () => {
         <div className="tabs" style={{ flexShrink: 0 }}>
           <button
             className={`tab ${activeTab === 'admins' ? 'active' : ''}`}
-            onClick={() => handleTabChange('admins')}
+            onClick={() => setActiveTab('admins')}
           >
             Admins
           </button>
           <button
             className={`tab ${activeTab === 'students' ? 'active' : ''}`}
-            onClick={() => handleTabChange('students')}
+            onClick={() => setActiveTab('students')}
           >
             Students
           </button>
           <button
             className={`tab ${activeTab === 'studentHeads' ? 'active' : ''}`}
-            onClick={() => handleTabChange('studentHeads')}
+            onClick={() => setActiveTab('studentHeads')}
           >
             Student Heads
           </button>
           <button
             className={`tab ${activeTab === 'studentHeadRequests' ? 'active' : ''}`}
-            onClick={() => handleTabChange('studentHeadRequests')}
+            onClick={() => setActiveTab('studentHeadRequests')}
           >
             Student Head Requests
           </button>
@@ -424,18 +417,15 @@ const AdminUserManagement = () => {
           transform: 'translateY(-7px)'
         }}>
           <SearchBar
-            placeholder={activeTab === 'studentHeadRequests' ? "Search will be available in other tabs..." : "Search user by name or email..."}
+            placeholder="Search student by name or email..."
             value={searchTerm}
             onChange={handleSearch}
-            disabled={activeTab === 'studentHeadRequests'}
           />
         </div>
       </div>
 
       {/* Content based on active tab */}
-      {activeTab === 'studentHeadRequests' ? (
-        <StudentHeadRequests />
-      ) : loading ? (
+      {loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}>
           <div style={{ fontSize: '18px', color: '#6b7280' }}>Loading users...</div>
         </div>
@@ -464,7 +454,6 @@ const AdminUserManagement = () => {
                     user={user} 
                     onViewDetails={handleViewUser} 
                     onPromote={promoteToStudentHead} 
-                    onDemote={demoteToStudent}
                   />
                 ))}
               </div>
@@ -513,19 +502,17 @@ const AdminUserManagement = () => {
                   gap: '16px' 
                 }}>
                   {filteredUsers.map(user => (
-                    <UserCard 
-                      key={user._id} 
-                      user={user} 
-                      onViewDetails={handleViewUser} 
-                      onPromote={promoteToStudentHead} 
-                      onDemote={demoteToStudent} 
-                    />
+                    <UserCard key={user._id} user={user} onViewDetails={handleViewUser} onPromote={promoteToStudentHead} onDemote={demoteToStudent} />
                   ))}
                 </div>
               )}
             </div>
           )}
         </>
+      )}
+
+      {activeTab === 'studentHeadRequests' && (
+        <StudentHeadRequests />
       )}
 
       {/* User Details Modal */}

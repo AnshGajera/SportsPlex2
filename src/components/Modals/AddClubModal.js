@@ -6,8 +6,6 @@ const AddClubModal = ({ isOpen, onClose, onSubmit }) => {
     name: '',
     description: '',
     category: '',
-    location: '',
-    meetingTime: '',
     contactEmail: '',
     maxMembers: '',
     requirements: '',
@@ -65,8 +63,6 @@ const AddClubModal = ({ isOpen, onClose, onSubmit }) => {
       name: '',
       description: '',
       category: '',
-      location: '',
-      meetingTime: '',
       contactEmail: '',
       maxMembers: '',
       requirements: '',
@@ -152,40 +148,8 @@ const AddClubModal = ({ isOpen, onClose, onSubmit }) => {
               />
             </div>
 
-            {/* Location */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Meeting Location *
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                placeholder="e.g., Sports Hall A, Basketball Court"
-              />
-            </div>
-
-            {/* Meeting Time */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Meeting Time *
-              </label>
-              <input
-                type="text"
-                name="meetingTime"
-                value={formData.meetingTime}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all"
-                placeholder="e.g., Tuesdays & Thursdays 5-7 PM"
-              />
-            </div>
-
             {/* Contact Email */}
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Contact Email *
               </label>

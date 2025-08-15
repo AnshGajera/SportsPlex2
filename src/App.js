@@ -18,6 +18,8 @@ import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminUserManagement from './pages/AdminUserManagement';
 import AdminProfile from './pages/AdminProfile';
+import AdminClubDetail from './pages/AdminClubDetail';
+import AdminUserProfile from './pages/AdminUserProfile';
 
 // User Pages
 import UserDashboard from './pages/UserDashboard';
@@ -27,6 +29,7 @@ import UserMatches from './pages/UserMatches';
 import UserAnnouncements from './pages/UserAnnouncements';
 import UserProfile from './pages/UserProfile';
 import StudentHeadRequest from './pages/StudentHeadRequest';
+import ClubDetail from './pages/ClubDetail';
 
 // Common/Legacy Pages
 import Equipment from './pages/Equipment';
@@ -65,6 +68,8 @@ function App() {
           <Route path="/admin/dashboard" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminDashboard /></ProtectedRoute></>} />
           <Route path="/admin/equipment" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminEquipment /></ProtectedRoute></>} />
           <Route path="/admin/clubs" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminClubs /></ProtectedRoute></>} />
+          <Route path="/admin/clubs/:id" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminClubDetail /></ProtectedRoute></>} />
+          <Route path="/admin/user-profile/:userId" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminUserProfile /></ProtectedRoute></>} />
           <Route path="/admin/matches" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminMatches /></ProtectedRoute></>} />
           <Route path="/admin/announcements" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminAnnouncements /></ProtectedRoute></>} />
           <Route path="/admin/analytics" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminAnalytics /></ProtectedRoute></>} />
@@ -75,6 +80,7 @@ function App() {
           <Route path="/user/dashboard" element={<><Navbar /><ProtectedRoute><UserDashboard /></ProtectedRoute></>} />
           <Route path="/user/equipment" element={<><Navbar /><ProtectedRoute><UserEquipment /></ProtectedRoute></>} />
           <Route path="/user/clubs" element={<><Navbar /><ProtectedRoute><UserClubs /></ProtectedRoute></>} />
+          <Route path="/user/clubs/:id" element={<><Navbar /><ProtectedRoute><ClubDetail /></ProtectedRoute></>} />
           <Route path="/user/matches" element={<><Navbar /><ProtectedRoute><UserMatches /></ProtectedRoute></>} />
           <Route path="/user/announcements" element={<><Navbar /><ProtectedRoute><UserAnnouncements /></ProtectedRoute></>} />
           <Route path="/user/profile" element={<><Navbar /><ProtectedRoute><UserProfile /></ProtectedRoute></>} />
@@ -94,7 +100,6 @@ function App() {
           <Route path="/student-head" element={<><Navbar /><ProtectedRoute><StudentHead /></ProtectedRoute></>} />
           <Route path="/admin/student-head-requests" element={<><Navbar /><ProtectedRoute adminOnly={true}><StudentHeadRequests /></ProtectedRoute></>} />
           <Route path="/admin/requests" element={<><Navbar /><ProtectedRoute adminOnly={true}><ApproveRequests /></ProtectedRoute></>} />
-          <Route path="/user-management" element={<><Navbar /><ProtectedRoute adminOnly={true}><UserManagement /></ProtectedRoute></>} />
         </Routes>
       </Router>
     </AuthProvider>

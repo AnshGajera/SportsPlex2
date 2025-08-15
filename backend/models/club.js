@@ -19,6 +19,20 @@ const clubSchema = new mongoose.Schema({
     required: [true, 'Club category is required'],
     trim: true
   },
+  contactEmail: {
+    type: String,
+    trim: true,
+    lowercase: true
+  },
+  maxMembers: {
+    type: Number,
+    min: [1, 'Maximum members must be at least 1']
+  },
+  requirements: {
+    type: String,
+    trim: true,
+    maxlength: [300, 'Requirements cannot exceed 300 characters']
+  },
   image: {
     type: String, // Store image file path
     default: null
