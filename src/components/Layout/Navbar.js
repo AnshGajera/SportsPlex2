@@ -81,6 +81,16 @@ const Navbar = () => {
             </Link>
             
             <Link 
+              to={currentUser && currentUser.role === 'admin' ? '/admin/events' : '/events'} 
+              className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                (location.pathname.startsWith('/events') || location.pathname.includes('/events') || location.pathname === '/admin/events') 
+                ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Events
+            </Link>
+            
+            <Link 
               to={currentUser && currentUser.role === 'admin' ? '/admin/matches' : '/user/matches'} 
               className={`px-3 py-2 text-sm font-medium rounded-lg ${
                 (location.pathname === '/admin/matches' || location.pathname === '/user/matches' || location.pathname === '/matches') 

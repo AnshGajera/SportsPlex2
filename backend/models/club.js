@@ -54,7 +54,7 @@ const clubSchema = new mongoose.Schema({
     },
     role: {
       type: String,
-      enum: ['member', 'moderator', 'admin'],
+      enum: ['member', 'moderator', 'club_head'],
       default: 'member'
     }
   }],

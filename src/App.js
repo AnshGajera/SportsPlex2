@@ -42,6 +42,10 @@ import StudentHeadRequests from './components/StudentHead/StudentHeadRequests';
 import UserManagement from './pages/UserManagement';
 import ApproveRequests from './pages/ApproveRequests';
 import Profile from './pages/Profile';
+import ClubEvents from './pages/ClubEvents';
+import EventDetails from './pages/EventDetails';
+import AllEvents from './pages/AllEvents';
+import AdminEvents from './pages/AdminEvents';
 
 
 
@@ -71,6 +75,7 @@ function App() {
           <Route path="/admin/clubs/:id" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminClubDetail /></ProtectedRoute></>} />
           <Route path="/admin/user-profile/:userId" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminUserProfile /></ProtectedRoute></>} />
           <Route path="/admin/matches" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminMatches /></ProtectedRoute></>} />
+          <Route path="/admin/events" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminEvents /></ProtectedRoute></>} />
           <Route path="/admin/announcements" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminAnnouncements /></ProtectedRoute></>} />
           <Route path="/admin/analytics" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminAnalytics /></ProtectedRoute></>} />
           <Route path="/admin/user-management" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminUserManagement /></ProtectedRoute></>} />
@@ -85,6 +90,11 @@ function App() {
           <Route path="/user/announcements" element={<><Navbar /><ProtectedRoute><UserAnnouncements /></ProtectedRoute></>} />
           <Route path="/user/profile" element={<><Navbar /><ProtectedRoute><UserProfile /></ProtectedRoute></>} />
           <Route path="/user/student-head-request" element={<><Navbar /><ProtectedRoute><StudentHeadRequest /></ProtectedRoute></>} />
+          
+          {/* Club Events Routes */}
+          <Route path="/clubs/:clubId/events" element={<><Navbar /><ProtectedRoute><ClubEvents /></ProtectedRoute></>} />
+          <Route path="/events/:eventId" element={<><Navbar /><ProtectedRoute><EventDetails /></ProtectedRoute></>} />
+          <Route path="/events" element={<><Navbar /><ProtectedRoute><AllEvents /></ProtectedRoute></>} />
           
           {/* Legacy/Common Routes (keep for backward compatibility) */}
           <Route path="/Home" element={<><Navbar /><ProtectedRoute><UserDashboard /></ProtectedRoute></>} />

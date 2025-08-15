@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Mail, Calendar, MapPin, Star, UserPlus, UserMinus } from 'lucide-react';
+import { ArrowLeft, Users, Mail, Calendar, MapPin, Star, UserPlus, UserMinus, Trophy } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -93,6 +93,14 @@ const ClubDetail = () => {
     });
   };
 
+  const getRoleDisplayName = (role) => {
+    switch (role) {
+      case 'club_head': return 'Club Head';
+      case 'moderator': return 'Moderator';
+      default: return 'Member';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -182,29 +190,40 @@ const ClubDetail = () => {
                 <h2 className="text-xl font-semibold text-gray-900">About {club.name}</h2>
                 <p className="text-gray-600">Learn more about this club</p>
               </div>
-              {user && user.role !== 'admin' && (
-                <div>
-                  {isUserMember() ? (
-                    <button
-                      onClick={handleLeaveClub}
-                      disabled={joining}
-                      className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center"
-                    >
-                      <UserMinus size={16} className="mr-2" />
-                      {joining ? 'Leaving...' : 'Leave Club'}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleJoinClub}
-                      disabled={joining}
-                      className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
-                    >
-                      <UserPlus size={16} className="mr-2" />
-                      {joining ? 'Joining...' : 'Join Club'}
-                    </button>
-                  )}
-                </div>
-              )}
+              <div className="flex items-center space-x-3">
+                {/* Events Button */}
+                <button
+                  onClick={() => navigate(`/clubs/${id}/events`)}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center"
+                >
+                  <Trophy size={16} className="mr-2" />
+                  Events
+                </button>
+
+                {user && user.role !== 'admin' && (
+                  <div>
+                    {isUserMember() ? (
+                      <button
+                        onClick={handleLeaveClub}
+                        disabled={joining}
+                        className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center"
+                      >
+                        <UserMinus size={16} className="mr-2" />
+                        {joining ? 'Leaving...' : 'Leave Club'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleJoinClub}
+                        disabled={joining}
+                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
+                      >
+                        <UserPlus size={16} className="mr-2" />
+                        {joining ? 'Joining...' : 'Join Club'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -242,7 +261,7 @@ const ClubDetail = () => {
                         {member.user.firstName} {member.user.lastName}
                       </p>
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <span className="capitalize">{member.role}</span>
+                        <span>{getRoleDisplayName(member.role)}</span>
                         {member.user.rollNo && (
                           <>
                             <span>•</span>

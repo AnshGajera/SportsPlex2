@@ -162,10 +162,10 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     // Create club
     const club = new Club(clubData);
     
-    // Add creator as admin member
+    // Add creator as club head
     club.members.push({
       user: req.user._id,
-      role: 'admin',
+      role: 'club_head',
       joinedAt: new Date()
     });
     
@@ -205,14 +205,14 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
       return res.status(404).json({ message: 'Club not found' });
     }
     
-    // Check permissions (club creator, admin, or club admin)
+    // Check permissions (club creator, admin, or club head)
     const isCreator = club.createdBy.toString() === req.user._id.toString();
     const isAdmin = req.user.role === 'admin';
-    const isClubAdmin = club.members.some(member => 
-      member.user.toString() === req.user._id.toString() && member.role === 'admin'
+    const isClubHead = club.members.some(member => 
+      member.user.toString() === req.user._id.toString() && member.role === 'club_head'
     );
-    
-    if (!isCreator && !isAdmin && !isClubAdmin) {
+
+    if (!isCreator && !isAdmin && !isClubHead) {
       return res.status(403).json({ message: 'Permission denied' });
     }
     
@@ -353,13 +353,13 @@ router.delete('/:id/members/:memberId', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Club not found' });
     }
 
-    // Check permissions - only system admin or club admin can remove members
+    // Check permissions - only system admin or club head can remove members
     const isSystemAdmin = req.user.role === 'admin';
-    const isClubAdmin = club.members.some(member => 
-      member.user.toString() === req.user._id.toString() && member.role === 'admin'
+    const isClubHead = club.members.some(member => 
+      member.user.toString() === req.user._id.toString() && member.role === 'club_head'
     );
 
-    if (!isSystemAdmin && !isClubAdmin) {
+    if (!isSystemAdmin && !isClubHead) {
       return res.status(403).json({ message: 'Only admins can remove members' });
     }
 
@@ -370,12 +370,12 @@ router.delete('/:id/members/:memberId', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Member not found in this club' });
     }
 
-    // Prevent removing the last admin (unless it's a system admin doing it)
+    // Prevent removing the last club head (unless it's a system admin doing it)
     const memberToRemove = club.members[memberIndex];
-    if (memberToRemove.role === 'admin') {
-      const adminCount = club.members.filter(m => m.role === 'admin').length;
-      if (adminCount === 1 && !isSystemAdmin) {
-        return res.status(400).json({ message: 'Cannot remove the last admin of the club' });
+    if (memberToRemove.role === 'club_head') {
+      const clubHeadCount = club.members.filter(m => m.role === 'club_head').length;
+      if (clubHeadCount === 1 && !isSystemAdmin) {
+        return res.status(400).json({ message: 'Cannot remove the last club head of the club' });
       }
     }
 
@@ -389,13 +389,13 @@ router.delete('/:id/members/:memberId', authMiddleware, async (req, res) => {
   }
 });
 
-// PUT /api/clubs/:id/members/:memberId/role - Update member role (admin only)
+// PUT /api/clubs/:id/members/:memberId/role - Update member role (club head/admin only)
 router.put('/:id/members/:memberId/role', authMiddleware, async (req, res) => {
   try {
     const { role } = req.body;
     
-    if (!['member', 'moderator', 'admin'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role. Must be member, moderator, or admin' });
+    if (!['member', 'moderator', 'club_head'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Must be member, moderator, or club_head' });
     }
 
     const club = await Club.findById(req.params.id);
@@ -404,14 +404,14 @@ router.put('/:id/members/:memberId/role', authMiddleware, async (req, res) => {
       return res.status(404).json({ message: 'Club not found' });
     }
 
-    // Check permissions - only system admin or club admin can change roles
+    // Check permissions - only system admin or club head can change roles
     const isSystemAdmin = req.user.role === 'admin';
-    const isClubAdmin = club.members.some(member => 
-      member.user.toString() === req.user._id.toString() && member.role === 'admin'
+    const isClubHead = club.members.some(member => 
+      member.user.toString() === req.user._id.toString() && member.role === 'club_head'
     );
 
-    if (!isSystemAdmin && !isClubAdmin) {
-      return res.status(403).json({ message: 'Only admins can change member roles' });
+    if (!isSystemAdmin && !isClubHead) {
+      return res.status(403).json({ message: 'Only club heads can change member roles' });
     }
 
     // Find the member
@@ -423,11 +423,11 @@ router.put('/:id/members/:memberId/role', authMiddleware, async (req, res) => {
 
     const currentMember = club.members[memberIndex];
     
-    // Prevent removing admin role if it's the last admin (unless system admin)
-    if (currentMember.role === 'admin' && role !== 'admin') {
-      const adminCount = club.members.filter(m => m.role === 'admin').length;
-      if (adminCount === 1 && !isSystemAdmin) {
-        return res.status(400).json({ message: 'Cannot remove admin role from the last admin of the club' });
+    // Prevent removing club_head role if it's the last club head (unless system admin)
+    if (currentMember.role === 'club_head' && role !== 'club_head') {
+      const clubHeadCount = club.members.filter(m => m.role === 'club_head').length;
+      if (clubHeadCount === 1 && !isSystemAdmin) {
+        return res.status(400).json({ message: 'Cannot remove club head role from the last club head of the club' });
       }
     }
 

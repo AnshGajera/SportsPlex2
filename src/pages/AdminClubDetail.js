@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ArrowLeft, Users, Mail, Calendar, Download, Search, 
-  MoreVertical, UserX, Crown, Shield, User, Edit, Trash2 
+  ArrowLeft, Users, Mail, Calendar, Download, Search, Ellipsis, 
+  UserX, Crown, Shield, User, Edit, Trash2, MoreVertical, Plus 
 } from 'lucide-react';
 import api from '../services/api';
 import * as XLSX from 'xlsx';
+import CreateEventModal from '../components/Modals/CreateEventModal';
 
 const AdminClubDetail = () => {
   const { id } = useParams();
@@ -15,6 +16,7 @@ const AdminClubDetail = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
   const [actionMenuOpen, setActionMenuOpen] = useState(null);
+  const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
 
   useEffect(() => {
     fetchClubDetails();
@@ -176,7 +178,7 @@ const AdminClubDetail = () => {
 
   const getRoleIcon = (role) => {
     switch (role) {
-      case 'admin': return <Crown size={16} className="text-yellow-600" />;
+      case 'club_head': return <Crown size={16} className="text-yellow-600" />;
       case 'moderator': return <Shield size={16} className="text-blue-600" />;
       default: return <User size={16} className="text-gray-600" />;
     }
@@ -184,10 +186,24 @@ const AdminClubDetail = () => {
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'admin': return 'bg-yellow-100 text-yellow-800';
+      case 'club_head': return 'bg-yellow-100 text-yellow-800';
       case 'moderator': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getRoleDisplayName = (role) => {
+    switch (role) {
+      case 'club_head': return 'Club Head';
+      case 'moderator': return 'Moderator';
+      default: return 'Member';
+    }
+  };
+
+  const handleEventCreated = (newEvent) => {
+    // Event created successfully, close modal
+    setIsCreateEventModalOpen(false);
+    // Could add notification here
   };
 
   if (loading) {
@@ -280,6 +296,13 @@ const AdminClubDetail = () => {
                 </div>
               </div>
               <div className="flex space-x-3">
+                <button
+                  onClick={() => setIsCreateEventModalOpen(true)}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Create Event
+                </button>
                 <button
                   onClick={exportToExcel}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
@@ -381,7 +404,7 @@ const AdminClubDetail = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
                         {getRoleIcon(member.role)}
-                        <span className="ml-1 capitalize">{member.role}</span>
+                        <span className="ml-1">{getRoleDisplayName(member.role)}</span>
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -410,11 +433,11 @@ const AdminClubDetail = () => {
                               </button>
                               <hr className="my-1" />
                               <button
-                                onClick={() => handleChangeMemberRole(member.user._id, 'admin')}
-                                disabled={member.role === 'admin'}
+                                onClick={() => handleChangeMemberRole(member.user._id, 'club_head')}
+                                disabled={member.role === 'club_head'}
                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                               >
-                                Make Admin
+                                Make Club Head
                               </button>
                               <button
                                 onClick={() => handleChangeMemberRole(member.user._id, 'moderator')}
@@ -460,6 +483,15 @@ const AdminClubDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Event Modal */}
+      <CreateEventModal
+        isOpen={isCreateEventModalOpen}
+        onClose={() => setIsCreateEventModalOpen(false)}
+        onEventCreated={handleEventCreated}
+        clubId={id}
+        isAdminMode={true}
+      />
     </div>
   );
 };
