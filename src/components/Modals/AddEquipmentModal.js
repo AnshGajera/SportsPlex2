@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Upload, Package } from 'lucide-react';
 
-const AddEquipmentModal = ({ isOpen, onClose, onSubmit }) => {
+const AddEquipmentModal = ({ isOpen, onClose, onSubmit, initialData }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -12,6 +12,33 @@ const AddEquipmentModal = ({ isOpen, onClose, onSubmit }) => {
     image: null,
     imagePreview: null
   });
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (initialData && isOpen) {
+      setFormData({
+        name: initialData.name || '',
+        category: initialData.category || '',
+        quantity: initialData.quantity ? String(initialData.quantity) : '',
+        description: initialData.description || '',
+        condition: initialData.condition || 'New',
+        location: initialData.location || '',
+        image: initialData.image || null,
+        imagePreview: initialData.image ? `http://localhost:5000${initialData.image}` : null
+      });
+    } else if (isOpen && !initialData) {
+      setFormData({
+        name: '',
+        category: '',
+        quantity: '',
+        description: '',
+        condition: 'New',
+        location: '',
+        image: null,
+        imagePreview: null
+      });
+    }
+  }, [initialData, isOpen]);
 
   const categories = [
     'Basketball',
@@ -50,15 +77,19 @@ const AddEquipmentModal = ({ isOpen, onClose, onSubmit }) => {
   const handleRemoveImage = () => {
     setFormData(prev => ({
       ...prev,
-      image: null,
+      image: '',
       imagePreview: null
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
-    // Reset form
+    let submitData = { ...formData };
+    // If editing and no new image is selected, send the backend path
+    if (initialData && !formData.imagePreview && initialData.image) {
+      submitData.image = initialData.image;
+    }
+    onSubmit(submitData);
     setFormData({
       name: '',
       category: '',
@@ -83,8 +114,8 @@ const AddEquipmentModal = ({ isOpen, onClose, onSubmit }) => {
               <Package size={20} className="text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Add Equipment</h2>
-              <p className="text-sm text-gray-500">Add new equipment to the inventory</p>
+              <h2 className="text-xl font-semibold text-gray-900">{initialData ? 'Edit Equipment' : 'Add Equipment'}</h2>
+              <p className="text-sm text-gray-500">{initialData ? 'Edit equipment details' : 'Add new equipment to the inventory'}</p>
             </div>
           </div>
           <button
@@ -224,7 +255,7 @@ const AddEquipmentModal = ({ isOpen, onClose, onSubmit }) => {
               ) : (
                 <div className="relative">
                   <img
-                    src={formData.imagePreview}
+                    src={typeof formData.imagePreview === 'string' && formData.imagePreview.startsWith('/uploads/') ? `http://localhost:5000${formData.imagePreview}` : formData.imagePreview}
                     alt="Equipment preview"
                     className="w-full h-48 object-cover rounded-lg"
                   />
@@ -253,7 +284,7 @@ const AddEquipmentModal = ({ isOpen, onClose, onSubmit }) => {
               type="submit"
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Add Equipment
+              {initialData ? 'Update Equipment' : 'Add Equipment'}
             </button>
           </div>
         </form>

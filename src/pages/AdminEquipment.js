@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Search, Filter, Package, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import AddEquipmentModal from '../components/Modals/AddEquipmentModal';
+import api from '../services/api';
 
 const AdminEquipment = () => {
   const location = useLocation();
@@ -36,6 +37,9 @@ const AdminEquipment = () => {
       color: '#ef4444'
     }
   ]);
+  const [equipmentList, setEquipmentList] = useState([]);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editEquipment, setEditEquipment] = useState(null);
 
   const categories = [
     'All Categories',
@@ -52,18 +56,18 @@ const AdminEquipment = () => {
     // Add sample requests here if needed
   ];
 
-  // TODO: Fetch analytics data from backend
-  // useEffect(() => {
-  //   const fetchAnalytics = async () => {
-  //     try {
-  //       const response = await api.get('/admin/equipment/analytics');
-  //       setAnalyticsData(response.data);
-  //     } catch (error) {
-  //       console.error('Error fetching equipment analytics:', error);
-  //     }
-  //   };
-  //   fetchAnalytics();
-  // }, []);
+  // Fetch equipment list from backend
+  useEffect(() => {
+    const fetchEquipment = async () => {
+      try {
+        const response = await api.get('/equipment');
+        setEquipmentList(response.data);
+      } catch (error) {
+        console.error('Error fetching equipment:', error);
+      }
+    };
+    fetchEquipment();
+  }, []);
 
   // Check URL parameters to set initial tab
   useEffect(() => {
@@ -75,10 +79,80 @@ const AdminEquipment = () => {
   }, [location.search]);
 
   const handleAddEquipment = (equipmentData) => {
-    console.log('Adding equipment:', equipmentData);
-    // TODO: Submit to backend API
-    // Example: api.post('/admin/equipment', equipmentData)
-    // Then refresh the equipment list
+    // ...existing code...
+    const submitEquipment = async () => {
+      try {
+        const formData = new FormData();
+        Object.entries(equipmentData).forEach(([key, value]) => {
+          if (key === 'image' && value) {
+            formData.append(key, value);
+          } else if (key !== 'imagePreview') {
+            formData.append(key, value);
+          }
+        });
+        await api.post('/equipment', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const response = await api.get('/equipment');
+        setEquipmentList(response.data);
+        setIsAddModalOpen(false);
+      } catch (error) {
+        console.error('Error adding equipment:', error);
+      }
+    };
+    submitEquipment();
+  };
+
+
+  // Edit equipment logic
+  const handleEditClick = (equipment) => {
+    setEditEquipment(equipment);
+    setEditModalOpen(true);
+  };
+
+  // Delete equipment logic
+  const handleDeleteEquipment = (equipmentId) => {
+    if (window.confirm('Are you sure you want to delete this equipment?')) {
+      const deleteEquipment = async () => {
+        try {
+          await api.delete(`/equipment/${equipmentId}`);
+          const response = await api.get('/equipment');
+          setEquipmentList(response.data);
+        } catch (error) {
+          console.error('Error deleting equipment:', error);
+        }
+      };
+      deleteEquipment();
+    }
+  };
+
+  const handleEditEquipment = (equipmentData) => {
+    const submitEdit = async () => {
+      try {
+        const formData = new FormData();
+        Object.entries(equipmentData).forEach(([key, value]) => {
+          if (key === 'image' && value && typeof value !== 'string') {
+            formData.append(key, value);
+          } else if (key !== 'imagePreview') {
+            formData.append(key, value);
+          }
+        });
+        await api.put(`/equipment/${editEquipment._id}`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        const response = await api.get('/equipment');
+        setEquipmentList(response.data);
+        setEditModalOpen(false);
+        setEditEquipment(null);
+      } catch (error) {
+        console.error('Error editing equipment:', error);
+      }
+    };
+    submitEdit();
   };
 
   return (
@@ -269,15 +343,43 @@ const AdminEquipment = () => {
 
       {activeTab === 'browse' && (
         <div>
-          <div className="empty-state">
-            <Package size={64} className="empty-state-icon" />
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-              No equipment in inventory
-            </h3>
-            <p style={{ marginBottom: '12px' }}>
-              Equipment inventory is currently empty. Add new equipment to get started.
-            </p>
-          </div>
+          {equipmentList.length === 0 ? (
+            <div className="empty-state">
+              <Package size={64} className="empty-state-icon" />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
+                No equipment in inventory
+              </h3>
+              <p style={{ marginBottom: '12px' }}>
+                Equipment inventory is currently empty. Add new equipment to get started.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-1">
+              {equipmentList.map((equipment, index) => (
+                <div key={index} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>{equipment.name}</h3>
+                    <p style={{ color: '#64748b', marginBottom: '8px' }}>Category: {equipment.category}</p>
+                    <p style={{ color: '#64748b', marginBottom: '8px' }}>Quantity: {equipment.quantity}</p>
+                    <p style={{ color: '#64748b', marginBottom: '8px' }}>Condition: {equipment.condition}</p>
+                    <p style={{ color: '#64748b', marginBottom: '8px' }}>Location: {equipment.location}</p>
+                    <p style={{ color: '#64748b', marginBottom: '8px' }}>Description: {equipment.description}</p>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                      <button className="btn btn-secondary" onClick={() => handleEditClick(equipment)}>
+                        Edit
+                      </button>
+                      <button className="btn btn-danger" onClick={() => handleDeleteEquipment(equipment._id)}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  {equipment.image && (
+                    <img src={`http://localhost:5000${equipment.image}`} alt={equipment.name} style={{ width: '220px', height: '180px', borderRadius: '12px', marginLeft: '32px', objectFit: 'cover', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -335,6 +437,15 @@ const AdminEquipment = () => {
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleAddEquipment}
       />
+      {/* Edit Equipment Modal (reuse AddEquipmentModal) */}
+      {editModalOpen && (
+        <AddEquipmentModal
+          isOpen={editModalOpen}
+          onClose={() => { setEditModalOpen(false); setEditEquipment(null); }}
+          onSubmit={handleEditEquipment}
+          initialData={editEquipment}
+        />
+      )}
     </div>
   );
 };
