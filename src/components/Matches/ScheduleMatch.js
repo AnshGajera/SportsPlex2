@@ -7,6 +7,7 @@ const ScheduleMatch = ({ onClose }) => {
     team1: '',
     team2: '',
     sport: '',
+    otherSport: '',
     venue: '',
     date: '',
     time: ''
@@ -19,7 +20,8 @@ const ScheduleMatch = ({ onClose }) => {
     'Cricket',
     'Badminton',
     'Table Tennis',
-    'Volleyball'
+    'Volleyball',
+    'Other'
   ];
 
   const venues = [
@@ -33,9 +35,10 @@ const ScheduleMatch = ({ onClose }) => {
   ];
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
 
@@ -75,7 +78,7 @@ const ScheduleMatch = ({ onClose }) => {
               <input
                 type="text"
                 name="team1"
-                placeholder="Team A"
+                placeholder="Team 1"
                 value={formData.team1}
                 onChange={handleInputChange}
                 required
@@ -86,7 +89,7 @@ const ScheduleMatch = ({ onClose }) => {
               <input
                 type="text"
                 name="team2"
-                placeholder="Team B"
+                placeholder="Team 2"
                 value={formData.team2}
                 onChange={handleInputChange}
                 required
@@ -107,6 +110,17 @@ const ScheduleMatch = ({ onClose }) => {
                 <option key={sport} value={sport}>{sport}</option>
               ))}
             </select>
+            {formData.sport === 'Other' && (
+              <input
+                type="text"
+                name="otherSport"
+                placeholder="Enter sport name"
+                value={formData.otherSport}
+                onChange={handleInputChange}
+                className="mt-2"
+                required
+              />
+            )}
           </div>
 
           <div className="input-group">

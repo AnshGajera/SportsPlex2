@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Calendar, MapPin, Clock, Users, Trophy } from 'lucide-react';
+import api from '../../services/api';
 
 const ScheduleMatchModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -58,21 +59,6 @@ const ScheduleMatchModal = ({ isOpen, onClose, onSubmit }) => {
     'Outdoor Field'
   ];
 
-  const equipmentOptions = [
-    'Basketball',
-    'Football',
-    'Tennis Rackets',
-    'Badminton Rackets',
-    'Table Tennis Paddles',
-    'Volleyball',
-    'Goal Posts',
-    'Nets',
-    'Cones',
-    'Scoreboard',
-    'Timer',
-    'Whistle'
-  ];
-
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -81,38 +67,39 @@ const ScheduleMatchModal = ({ isOpen, onClose, onSubmit }) => {
     }));
   };
 
-  const handleEquipmentChange = (equipment) => {
-    setFormData(prev => ({
-      ...prev,
-      equipment: prev.equipment.includes(equipment)
-        ? prev.equipment.filter(item => item !== equipment)
-        : [...prev.equipment, equipment]
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
-    // Reset form
-    setFormData({
-      title: '',
-      sport: '',
-      matchType: '',
-      team1: '',
-      team2: '',
-      date: '',
-      time: '',
-      venue: '',
-      duration: '90',
-      description: '',
-      tournament: '',
-      isPublic: true,
-      allowSpectators: true,
-      maxSpectators: '',
-      registrationDeadline: '',
-      equipment: []
-    });
-    onClose();
+    try {
+      // Prepare match data for backend
+      const matchData = {
+        ...formData,
+        matchDate: formData.date + 'T' + formData.time,
+        status: 'upcoming',
+        team1: { name: formData.team1 },
+        team2: { name: formData.team2 },
+        sport: formData.sport === 'Other' ? formData.otherSport : formData.sport
+      };
+      await api.post('/matches', matchData);
+      if (typeof onSubmit === 'function') onSubmit(matchData);
+      // Reset form
+      setFormData({
+        title: '',
+        sport: '',
+        otherSport: '',
+        matchType: '',
+        team1: '',
+        team2: '',
+        date: '',
+        time: '',
+        venue: '',
+        duration: '90',
+        description: '',
+        tournament: ''
+      });
+      onClose();
+    } catch (error) {
+      alert('Failed to schedule match: ' + (error.response?.data?.message || error.message));
+    }
   };
 
   const getMinDate = () => {
@@ -182,10 +169,21 @@ const ScheduleMatchModal = ({ isOpen, onClose, onSubmit }) => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
                 >
                   <option value="">Select sport</option>
-                  {sports.map(sport => (
+                  {sports.concat('Other').map(sport => (
                     <option key={sport} value={sport}>{sport}</option>
                   ))}
                 </select>
+                {formData.sport === 'Other' && (
+                  <input
+                    type="text"
+                    name="otherSport"
+                    value={formData.otherSport}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all mt-2"
+                    placeholder="Enter sport name"
+                  />
+                )}
               </div>
 
               {/* Match Type */}
@@ -228,7 +226,7 @@ const ScheduleMatchModal = ({ isOpen, onClose, onSubmit }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Team 1 / Home Team *
+                  Team 1 *
                 </label>
                 <input
                   type="text"
@@ -242,7 +240,7 @@ const ScheduleMatchModal = ({ isOpen, onClose, onSubmit }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Team 2 / Away Team *
+                  Team 2 *
                 </label>
                 <input
                   type="text"
@@ -350,103 +348,6 @@ const ScheduleMatchModal = ({ isOpen, onClose, onSubmit }) => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all resize-none"
                 placeholder="Additional details about the match..."
               />
-            </div>
-
-            {/* Equipment Needed */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Equipment Needed
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {equipmentOptions.map(equipment => (
-                  <label
-                    key={equipment}
-                    className={`flex items-center gap-2 p-2 border rounded-lg cursor-pointer transition-all ${
-                      formData.equipment.includes(equipment)
-                        ? 'border-purple-500 bg-purple-50'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.equipment.includes(equipment)}
-                      onChange={() => handleEquipmentChange(equipment)}
-                      className="sr-only"
-                    />
-                    <span className={`text-sm ${formData.equipment.includes(equipment) ? 'text-purple-600 font-medium' : 'text-gray-700'}`}>
-                      {equipment}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Spectator Settings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Registration Deadline
-                </label>
-                <input
-                  type="date"
-                  name="registrationDeadline"
-                  value={formData.registrationDeadline}
-                  onChange={handleInputChange}
-                  min={getMinDate()}
-                  max={formData.date}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Max Spectators
-                </label>
-                <input
-                  type="number"
-                  name="maxSpectators"
-                  value={formData.maxSpectators}
-                  onChange={handleInputChange}
-                  min="1"
-                  disabled={!formData.allowSpectators}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all disabled:bg-gray-100 disabled:text-gray-500"
-                  placeholder="Leave empty for unlimited"
-                />
-              </div>
-            </div>
-
-            {/* Settings */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  Public Match (visible to all users)
-                </label>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="isPublic"
-                    checked={formData.isPublic}
-                    onChange={handleInputChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700">
-                  Allow Spectators
-                </label>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="allowSpectators"
-                    checked={formData.allowSpectators}
-                    onChange={handleInputChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
-              </div>
             </div>
           </div>
 

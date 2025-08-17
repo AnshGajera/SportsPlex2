@@ -46,9 +46,9 @@ const AdminMatches = () => {
         setMatches(matchesData);
         
         // Update analytics
-        const liveMatches = matchesData.filter(match => match.status === 'live').length;
-        const upcomingMatches = matchesData.filter(match => match.status === 'upcoming').length;
-        const completedMatches = matchesData.filter(match => match.status === 'completed').length;
+        const liveMatches = matchesData.filter(match => getMatchStatus(match) === 'live').length;
+        const upcomingMatches = matchesData.filter(match => getMatchStatus(match) === 'upcoming').length;
+        const completedMatches = matchesData.filter(match => getMatchStatus(match) === 'completed').length;
         const totalMatches = matchesData.length;
         
         setAnalyticsData(prev => [
@@ -65,11 +65,25 @@ const AdminMatches = () => {
     };
 
     fetchMatches();
+    // Poll every minute to update live/completed status
+    const interval = setInterval(fetchMatches, 60000);
+    return () => clearInterval(interval);
   }, []);
 
-  const liveMatches = matches.filter(match => match.status === 'live');
-  const upcomingMatches = matches.filter(match => match.status === 'upcoming');
-  const completedMatches = matches.filter(match => match.status === 'completed');
+  const getMatchStatus = (match) => {
+    const now = new Date();
+    const start = new Date(match.matchDate);
+    const durationMinutes = Number(match.duration) || 90;
+    const end = new Date(start.getTime() + durationMinutes * 60000);
+
+    if (now < start) return 'upcoming';
+    if (now >= start && now < end) return 'live';
+    return 'completed';
+  };
+
+  const liveMatches = matches.filter(match => getMatchStatus(match) === 'live');
+  const upcomingMatches = matches.filter(match => getMatchStatus(match) === 'upcoming');
+  const completedMatches = matches.filter(match => getMatchStatus(match) === 'completed');
 
   const handleScheduleMatch = (newMatch) => {
     setMatches(prevMatches => [...prevMatches, newMatch]);
