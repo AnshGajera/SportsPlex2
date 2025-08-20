@@ -7,6 +7,7 @@ import {
 import api from '../services/api';
 import * as XLSX from 'xlsx';
 import CreateEventModal from '../components/Modals/CreateEventModal';
+import EditClubModal from '../components/Modals/EditClubModal';
 
 const AdminClubDetail = () => {
   const { id } = useParams();
@@ -17,6 +18,8 @@ const AdminClubDetail = () => {
   const [error, setError] = useState('');
   const [actionMenuOpen, setActionMenuOpen] = useState(null);
   const [isCreateEventModalOpen, setIsCreateEventModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     fetchClubDetails();
@@ -206,6 +209,22 @@ const AdminClubDetail = () => {
     // Could add notification here
   };
 
+  const handleDeleteClub = async () => {
+    try {
+      await api.delete(`/clubs/${id}`);
+      alert('Club deleted successfully');
+      navigate('/admin/clubs');
+    } catch (error) {
+      console.error('Error deleting club:', error);
+      alert(error.response?.data?.message || 'Failed to delete club');
+    }
+    setShowDeleteModal(false);
+  };
+
+  const handleClubUpdated = (updatedClub) => {
+    setClub(updatedClub);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -310,9 +329,19 @@ const AdminClubDetail = () => {
                   <Download size={16} className="mr-2" />
                   Export Excel
                 </button>
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                <button 
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                >
                   <Edit size={16} className="mr-2" />
                   Edit Club
+                </button>
+                <button 
+                  onClick={() => setShowDeleteModal(true)}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center"
+                >
+                  <Trash2 size={16} className="mr-2" />
+                  Delete Club
                 </button>
               </div>
             </div>
@@ -492,6 +521,59 @@ const AdminClubDetail = () => {
         clubId={id}
         isAdminMode={true}
       />
+
+      {/* Edit Club Modal */}
+      <EditClubModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        club={club}
+        onClubUpdated={handleClubUpdated}
+      />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                <Trash2 size={24} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Club</h3>
+                <p className="text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete <strong>{club?.name}</strong>? 
+                This will permanently remove the club and all its data including:
+              </p>
+              <ul className="mt-3 text-sm text-gray-600 list-disc list-inside space-y-1">
+                <li>All club members ({club?.members?.length || 0} members)</li>
+                <li>Club settings and configuration</li>
+                <li>Associated events and activities</li>
+                <li>Club image and files</li>
+              </ul>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteClub}
+                className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Delete Club
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
