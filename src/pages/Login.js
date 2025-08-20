@@ -370,9 +370,6 @@ const Login = () => {
                   <input type="checkbox" className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" />
                   <span className="ml-2 text-sm text-gray-600">Remember me</span>
                 </label>
-                <a href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
-                  Forgot your password?
-                </a>
               </div>
 
             </div>
@@ -489,21 +486,25 @@ const Login = () => {
           <div className="flex-grow border-t border-gray-300"></div>
         </div>
 
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            className="flex items-center text-sm font-medium text-blue-600 hover:underline focus:outline-none"
-          >
-            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" className="w-5 h-5 mr-2" />
-            Log in with Google
-          </button>
-        </div>
-        
-        <div className="text-center mt-6">
-          <a href="/forgot-password" /* Changed to a more realistic link */ className="text-sm text-blue-600 hover:underline">
-            Forgot Password?
-          </a>
+        <div className="space-y-4">
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              className="flex items-center justify-center w-full py-3 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+            >
+              <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" className="w-5 h-5 mr-3" />
+              Continue with Google
+            </button>
+          </div>
+          
+          {activeTab === 'login' && (
+            <div className="text-center">
+              <a href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                Forgot your password?
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>

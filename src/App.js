@@ -19,6 +19,7 @@ import AdminAnalytics from './pages/AdminAnalytics';
 import AdminUserManagement from './pages/AdminUserManagement';
 import AdminProfile from './pages/AdminProfile';
 import AdminClubDetail from './pages/AdminClubDetail';
+import AdminStudentHeadRequests from './pages/AdminStudentHeadRequests';
 import AdminUserProfile from './pages/AdminUserProfile';
 
 // User Pages
@@ -38,7 +39,6 @@ import Matches from './pages/Matches';
 import Announcements from './pages/Announcements';
 import ScheduleMatch from './components/Matches/ScheduleMatch';
 import StudentHead from './pages/StudentHead';
-import StudentHeadRequests from './components/StudentHead/StudentHeadRequests';
 import UserManagement from './pages/UserManagement';
 import ApproveRequests from './pages/ApproveRequests';
 import Profile from './pages/Profile';
@@ -108,7 +108,7 @@ function App() {
           {/* Other Routes */}
           <Route path="/schedule-match" element={<><Navbar /><ProtectedRoute><ScheduleMatch /></ProtectedRoute></>} />
           <Route path="/student-head" element={<><Navbar /><ProtectedRoute><StudentHead /></ProtectedRoute></>} />
-          <Route path="/admin/student-head-requests" element={<><Navbar /><ProtectedRoute adminOnly={true}><StudentHeadRequests /></ProtectedRoute></>} />
+          <Route path="/admin/student-head-requests" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminStudentHeadRequests /></ProtectedRoute></>} />
           <Route path="/admin/requests" element={<><Navbar /><ProtectedRoute adminOnly={true}><ApproveRequests /></ProtectedRoute></>} />
         </Routes>
       </Router>

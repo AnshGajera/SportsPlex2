@@ -9,7 +9,8 @@ import {
   BarChart3,
   Trophy,
   AlertTriangle,
-  Plus
+  Plus,
+  UserCheck
 } from 'lucide-react';
 
 const AdminPanel = () => {
@@ -85,10 +86,10 @@ const AdminPanel = () => {
       color: '#a7fffeff' // Light Teal
     },
     {
-      icon: Package,
+      icon: UserCheck,
       title: 'Student Head Requests',
-      description: 'Manage student head position requests',
-      link: '/admin/user-management?tab=student-head-requests',
+      description: 'Review and manage student head applications',
+      link: '/admin/student-head-requests',
       color: '#e2dcffff' // Soft Lavender
     },
     {

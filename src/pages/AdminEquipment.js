@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Filter, Package, Clock, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { Search, Filter, Package, Clock, CheckCircle, XCircle, Plus, Users, AlertTriangle } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import AddEquipmentModal from '../components/Modals/AddEquipmentModal';
 import api from '../services/api';
@@ -11,6 +11,8 @@ const AdminEquipment = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [allocations, setAllocations] = useState([]);
   const [analyticsData, setAnalyticsData] = useState([
     {
       icon: Package,
@@ -25,15 +27,15 @@ const AdminEquipment = () => {
       color: '#f59e0b'
     },
     {
-      icon: CheckCircle,
+      icon: Users,
       count: 0,
-      label: 'Approved',
+      label: 'Active Allocations',
       color: '#10b981'
     },
     {
-      icon: XCircle,
+      icon: AlertTriangle,
       count: 0,
-      label: 'Rejected',
+      label: 'Overdue Returns',
       color: '#ef4444'
     }
   ]);
@@ -52,29 +54,84 @@ const AdminEquipment = () => {
     'Volleyball'
   ];
 
-  const myRequests = [
-    // Add sample requests here if needed
-  ];
+  // Fetch functions
+  const fetchEquipment = async () => {
+    try {
+      const response = await api.get('/equipment');
+      setEquipmentList(response.data);
+    } catch (error) {
+      console.error('Error fetching equipment:', error);
+    }
+  };
 
-  // Fetch equipment list from backend
+  const fetchRequests = async () => {
+    try {
+      const response = await api.get('/equipment/requests');
+      setRequests(response.data.requests || response.data);
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+    }
+  };
+
+  const fetchAllocations = async () => {
+    try {
+      const response = await api.get('/equipment/allocations');
+      setAllocations(response.data);
+    } catch (error) {
+      console.error('Error fetching allocations:', error);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const analyticsResponse = await api.get('/equipment/requests/analytics');
+      const analytics = analyticsResponse.data;
+      
+      setAnalyticsData([
+        {
+          icon: Package,
+          count: analytics.totalEquipment || 0,
+          label: 'Total Equipment',
+          color: '#3b82f6'
+        },
+        {
+          icon: Clock,
+          count: analytics.pending || 0,
+          label: 'Pending Requests',
+          color: '#f59e0b'
+        },
+        {
+          icon: Users,
+          count: analytics.totalAllocated || 0,
+          label: 'Active Allocations',
+          color: '#10b981'
+        },
+        {
+          icon: AlertTriangle,
+          count: analytics.overdueAllocations || 0,
+          label: 'Overdue Returns',
+          color: '#ef4444'
+        }
+      ]);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
+  // useEffect hooks
   useEffect(() => {
-    const fetchEquipment = async () => {
-      try {
-        const response = await api.get('/equipment');
-        setEquipmentList(response.data);
-      } catch (error) {
-        console.error('Error fetching equipment:', error);
-      }
-    };
     fetchEquipment();
+    fetchRequests();
+    fetchAllocations();
+    fetchAnalytics();
   }, []);
 
   // Check URL parameters to set initial tab
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const tab = urlParams.get('tab');
-    if (tab === 'requests') {
-      setActiveTab('requests');
+    if (['requests', 'allocations', 'returns'].includes(tab)) {
+      setActiveTab(tab);
     }
   }, [location.search]);
 
@@ -95,8 +152,10 @@ const AdminEquipment = () => {
             'Content-Type': 'multipart/form-data',
           },
         });
-        const response = await api.get('/equipment');
-        setEquipmentList(response.data);
+        
+        // Refresh data
+        fetchEquipment();
+        fetchAnalytics();
         setIsAddModalOpen(false);
       } catch (error) {
         console.error('Error adding equipment:', error);
@@ -144,8 +203,10 @@ const AdminEquipment = () => {
             'Content-Type': 'multipart/form-data',
           },
         });
-        const response = await api.get('/equipment');
-        setEquipmentList(response.data);
+        
+        // Refresh data
+        fetchEquipment();
+        fetchAnalytics();
         setEditModalOpen(false);
         setEditEquipment(null);
       } catch (error) {
@@ -153,6 +214,92 @@ const AdminEquipment = () => {
       }
     };
     submitEdit();
+  };
+
+  // Request management functions
+  const handleApproveRequest = async (requestId, expectedReturnDate) => {
+    try {
+      await api.put(`/equipment/requests/${requestId}`, {
+        status: 'approved',
+        expectedReturnDate,
+        adminNotes: 'Request approved'
+      });
+      
+      // Refresh data
+      fetchRequests();
+      fetchAnalytics();
+      alert('Request approved successfully!');
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert('Error approving request: ' + (error.response?.data?.error || 'Unknown error'));
+    }
+  };
+
+  const handleRejectRequest = async (requestId, reason) => {
+    try {
+      await api.put(`/equipment/requests/${requestId}`, {
+        status: 'rejected',
+        adminNotes: reason || 'Request rejected'
+      });
+      
+      // Refresh data
+      fetchRequests();
+      fetchAnalytics();
+      alert('Request rejected successfully!');
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      alert('Error rejecting request: ' + (error.response?.data?.error || 'Unknown error'));
+    }
+  };
+
+  const handleAllocateEquipment = async (requestId, expectedReturnDate) => {
+    try {
+      await api.post(`/equipment/allocate/${requestId}`, {
+        expectedReturnDate
+      });
+      
+      // Refresh data
+      fetchRequests();
+      fetchAllocations();
+      fetchEquipment();
+      fetchAnalytics();
+      alert('Equipment allocated successfully!');
+    } catch (error) {
+      console.error('Error allocating equipment:', error);
+      alert('Error allocating equipment: ' + (error.response?.data?.error || 'Unknown error'));
+    }
+  };
+
+  const handleReturnEquipment = async (allocationId, returnCondition, returnNotes) => {
+    try {
+      await api.post(`/equipment/return/${allocationId}`, {
+        returnCondition,
+        returnNotes
+      });
+      
+      // Refresh data
+      fetchAllocations();
+      fetchEquipment();
+      fetchAnalytics();
+      alert('Equipment returned successfully!');
+    } catch (error) {
+      console.error('Error returning equipment:', error);
+      alert('Error returning equipment: ' + (error.response?.data?.error || 'Unknown error'));
+    }
+  };
+
+  // Migration function for legacy data
+  const handleDataMigration = async () => {
+    try {
+      const response = await api.post('/equipment/migrate');
+      alert(response.data.message);
+      // Refresh data after migration
+      fetchEquipment();
+      fetchAnalytics();
+    } catch (error) {
+      console.error('Migration error:', error);
+      alert('Migration failed: ' + (error.response?.data?.error || 'Unknown error'));
+    }
   };
 
   return (
@@ -169,39 +316,72 @@ const AdminEquipment = () => {
             {activeTab === 'browse' ? 'Browse and manage equipment inventory' : 'Manage inventory and approve requests'}
           </p>
         </div>
-        <button 
-          className="btn btn-primary"
-          onClick={() => setIsAddModalOpen(true)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            backgroundColor: '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)',
-            minWidth: 'fit-content'
-          }}
-          onMouseEnter={e => {
-            e.target.style.backgroundColor = '#2563eb';
-            e.target.style.transform = 'translateY(-1px)';
-            e.target.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
-          }}
-          onMouseLeave={e => {
-            e.target.style.backgroundColor = '#3b82f6';
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)';
-          }}
-        >
-          <Plus size={18} />
-          Add Equipment
-        </button>
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'center'
+        }}>
+          <button 
+            className="btn btn-secondary"
+            onClick={handleDataMigration}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 16px',
+              backgroundColor: '#6b7280',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(107, 114, 128, 0.2)',
+            }}
+            onMouseEnter={e => {
+              e.target.style.backgroundColor = '#4b5563';
+            }}
+            onMouseLeave={e => {
+              e.target.style.backgroundColor = '#6b7280';
+            }}
+          >
+            Migrate Data
+          </button>
+          <button 
+            className="btn btn-primary"
+            onClick={() => setIsAddModalOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 20px',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)',
+              minWidth: 'fit-content'
+            }}
+            onMouseEnter={e => {
+              e.target.style.backgroundColor = '#2563eb';
+              e.target.style.transform = 'translateY(-1px)';
+              e.target.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
+            }}
+            onMouseLeave={e => {
+              e.target.style.backgroundColor = '#3b82f6';
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)';
+            }}
+          >
+            <Plus size={18} />
+            Add Equipment
+          </button>
+        </div>
       </div>
 
       {/* Analytics Cards */}
@@ -288,7 +468,19 @@ const AdminEquipment = () => {
             className={`tab ${activeTab === 'requests' ? 'active' : ''}`}
             onClick={() => setActiveTab('requests')}
           >
-            Approve Requests
+            Equipment Requests
+          </button>
+          <button 
+            className={`tab ${activeTab === 'allocations' ? 'active' : ''}`}
+            onClick={() => setActiveTab('allocations')}
+          >
+            Active Allocations
+          </button>
+          <button 
+            className={`tab ${activeTab === 'returns' ? 'active' : ''}`}
+            onClick={() => setActiveTab('returns')}
+          >
+            Manage Returns
           </button>
         </div>
 
@@ -360,7 +552,9 @@ const AdminEquipment = () => {
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>{equipment.name}</h3>
                     <p style={{ color: '#64748b', marginBottom: '8px' }}>Category: {equipment.category}</p>
-                    <p style={{ color: '#64748b', marginBottom: '8px' }}>Quantity: {equipment.quantity}</p>
+                    <p style={{ color: '#64748b', marginBottom: '8px' }}>
+                      Quantity: {equipment.quantity} | Available: {equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity} | Allocated: {equipment.allocatedQuantity || 0}
+                    </p>
                     <p style={{ color: '#64748b', marginBottom: '8px' }}>Condition: {equipment.condition}</p>
                     <p style={{ color: '#64748b', marginBottom: '8px' }}>Location: {equipment.location}</p>
                     <p style={{ color: '#64748b', marginBottom: '8px' }}>Description: {equipment.description}</p>
@@ -385,47 +579,301 @@ const AdminEquipment = () => {
 
       {activeTab === 'requests' && (
         <div>
-          {myRequests.length === 0 ? (
+          {requests.length === 0 ? (
             <div className="empty-state">
               <Package size={64} className="empty-state-icon" />
               <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
-                No requests to approve
+                No equipment requests
               </h3>
               <p style={{ marginBottom: '12px' }}>
-                There are no equipment requests pending approval.
+                There are no equipment requests to review at the moment.
               </p>
             </div>
           ) : (
             <div className="grid grid-1">
-              {myRequests.map((request, index) => (
+              {requests.map((request, index) => (
                 <div key={index} className="card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>
-                        {request.equipment}
+                        {request.equipment?.name}
                       </h3>
-                      <p style={{ color: '#64748b', marginBottom: '8px' }}>
-                        Requested on: {request.date}
+                      <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                        Requested by: {request.requester?.firstName} {request.requester?.lastName}
                       </p>
-                      <span 
-                        style={{
-                          display: 'inline-block',
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          backgroundColor: request.status === 'Approved' ? '#dcfce7' : 
-                                         request.status === 'Pending' ? '#fef3c7' : '#fee2e2',
-                          color: request.status === 'Approved' ? '#166534' : 
-                                 request.status === 'Pending' ? '#92400e' : '#dc2626'
-                        }}
-                      >
-                        {request.status}
-                      </span>
+                      <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                        Email: {request.requester?.email}
+                      </p>
+                      <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                        Quantity: {request.quantityRequested}
+                      </p>
+                      <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                        Duration: {request.duration}
+                      </p>
+                      {request.purpose && (
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Purpose: {request.purpose}
+                        </p>
+                      )}
+                      <p style={{ color: '#64748b', marginBottom: '8px' }}>
+                        Requested on: {new Date(request.createdAt).toLocaleDateString()}
+                      </p>
+                      
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            backgroundColor:
+                              request.status === 'approved'
+                                ? '#dcfce7'
+                                : request.status === 'allocated'
+                                ? '#dbeafe'
+                                : request.status === 'pending'
+                                ? '#fef3c7'
+                                : '#fee2e2',
+                            color:
+                              request.status === 'approved'
+                                ? '#166534'
+                                : request.status === 'allocated'
+                                ? '#1e40af'
+                                : request.status === 'pending'
+                                ? '#92400e'
+                                : '#dc2626'
+                          }}
+                        >
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </span>
+                      </div>
+
+                      {request.status === 'pending' && (
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ backgroundColor: '#10b981', color: 'white' }}
+                            onClick={() => {
+                              const returnDate = prompt('Enter expected return date (YYYY-MM-DD):');
+                              if (returnDate) {
+                                handleApproveRequest(request._id, returnDate);
+                              }
+                            }}
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            className="btn btn-danger"
+                            onClick={() => {
+                              const reason = prompt('Enter rejection reason (optional):');
+                              handleRejectRequest(request._id, reason);
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {request.status === 'approved' && (
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => {
+                              const returnDate = request.expectedReturnDate || prompt('Enter expected return date (YYYY-MM-DD):');
+                              if (returnDate) {
+                                handleAllocateEquipment(request._id, returnDate);
+                              }
+                            }}
+                          >
+                            Allocate Equipment
+                          </button>
+                        </div>
+                      )}
+
+                      {request.adminNotes && (
+                        <p style={{ color: '#64748b', marginTop: '8px', fontStyle: 'italic' }}>
+                          Admin Notes: {request.adminNotes}
+                        </p>
+                      )}
                     </div>
+                    {request.equipment?.image && (
+                      <img 
+                        src={`http://localhost:5000${request.equipment.image}`} 
+                        alt={request.equipment.name} 
+                        style={{ 
+                          width: '120px', 
+                          height: '90px', 
+                          borderRadius: '8px', 
+                          marginLeft: '16px', 
+                          objectFit: 'cover' 
+                        }} 
+                      />
+                    )}
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Active Allocations Tab */}
+      {activeTab === 'allocations' && (
+        <div>
+          {allocations.filter(a => a.status === 'allocated').length === 0 ? (
+            <div className="empty-state">
+              <Users size={64} className="empty-state-icon" />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
+                No active allocations
+              </h3>
+              <p style={{ marginBottom: '12px' }}>
+                There are no equipment allocations currently active.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-1">
+              {allocations.filter(a => a.status === 'allocated').map((allocation, index) => {
+                const isOverdue = new Date() > new Date(allocation.expectedReturnDate);
+                return (
+                  <div key={index} className="card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>
+                          {allocation.equipment?.name}
+                        </h3>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Allocated to: {allocation.allocatedTo?.firstName} {allocation.allocatedTo?.lastName}
+                        </p>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Email: {allocation.allocatedTo?.email}
+                        </p>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Quantity: {allocation.quantityAllocated}
+                        </p>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Allocated on: {new Date(allocation.allocationDate).toLocaleDateString()}
+                        </p>
+                        <p style={{ 
+                          color: isOverdue ? '#dc2626' : '#64748b', 
+                          marginBottom: '8px',
+                          fontWeight: isOverdue ? '600' : 'normal'
+                        }}>
+                          Expected return: {new Date(allocation.expectedReturnDate).toLocaleDateString()}
+                          {isOverdue && ' (OVERDUE)'}
+                        </p>
+                        
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            backgroundColor: isOverdue ? '#fee2e2' : '#dbeafe',
+                            color: isOverdue ? '#dc2626' : '#1e40af',
+                            marginBottom: '8px'
+                          }}
+                        >
+                          {isOverdue ? 'Overdue' : 'Active'}
+                        </span>
+                      </div>
+                      {allocation.equipment?.image && (
+                        <img 
+                          src={`http://localhost:5000${allocation.equipment.image}`} 
+                          alt={allocation.equipment.name} 
+                          style={{ 
+                            width: '120px', 
+                            height: '90px', 
+                            borderRadius: '8px', 
+                            marginLeft: '16px', 
+                            objectFit: 'cover' 
+                          }} 
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Manage Returns Tab */}
+      {activeTab === 'returns' && (
+        <div>
+          {allocations.filter(a => a.status === 'allocated').length === 0 ? (
+            <div className="empty-state">
+              <Package size={64} className="empty-state-icon" />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '8px', color: '#374151' }}>
+                No equipment to return
+              </h3>
+              <p style={{ marginBottom: '12px' }}>
+                There are no equipment allocations waiting for return.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-1">
+              {allocations.filter(a => a.status === 'allocated').map((allocation, index) => {
+                const isOverdue = new Date() > new Date(allocation.expectedReturnDate);
+                return (
+                  <div key={index} className="card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>
+                          {allocation.equipment?.name}
+                        </h3>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Allocated to: {allocation.allocatedTo?.firstName} {allocation.allocatedTo?.lastName}
+                        </p>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Quantity: {allocation.quantityAllocated}
+                        </p>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Allocated on: {new Date(allocation.allocationDate).toLocaleDateString()}
+                        </p>
+                        <p style={{ 
+                          color: isOverdue ? '#dc2626' : '#64748b', 
+                          marginBottom: '8px',
+                          fontWeight: isOverdue ? '600' : 'normal'
+                        }}>
+                          Expected return: {new Date(allocation.expectedReturnDate).toLocaleDateString()}
+                          {isOverdue && ' (OVERDUE)'}
+                        </p>
+                        
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                          <button 
+                            className="btn btn-primary"
+                            onClick={() => {
+                              const condition = prompt('Enter return condition (excellent/good/fair/poor/damaged):');
+                              if (condition) {
+                                const notes = prompt('Enter return notes (optional):') || '';
+                                handleReturnEquipment(allocation._id, condition, notes);
+                              }
+                            }}
+                          >
+                            Mark as Returned
+                          </button>
+                        </div>
+                      </div>
+                      {allocation.equipment?.image && (
+                        <img 
+                          src={`http://localhost:5000${allocation.equipment.image}`} 
+                          alt={allocation.equipment.name} 
+                          style={{ 
+                            width: '120px', 
+                            height: '90px', 
+                            borderRadius: '8px', 
+                            marginLeft: '16px', 
+                            objectFit: 'cover' 
+                          }} 
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

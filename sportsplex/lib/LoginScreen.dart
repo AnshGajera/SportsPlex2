@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'app_config.dart';
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -6,6 +9,119 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Example API endpoints (replace with your actual backend URLs)
+  final String loginUrl = '${AppConfig.baseUrl}/api/auth/login';
+  final String registerUrl = '${AppConfig.baseUrl}/api/auth/register';
+
+  bool isLoading = false;
+  String errorMessage = '';
+
+  Future<void> loginUser() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+    try {
+      final response = await http.post(
+        Uri.parse(loginUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+      print('Login response: ${response.statusCode} ${response.body}');
+      if (response.statusCode == 200) {
+        setState(() {
+          errorMessage = '';
+        });
+        final data = jsonDecode(response.body);
+        final role = data['role'];
+        final token = data['token'];
+        if (role == 'student') {
+          Navigator.pushReplacementNamed(
+            context,
+            '/studentDashboard',
+            arguments: {'token': token},
+          );
+        } else if (role == 'student_head') {
+          Navigator.pushReplacementNamed(
+            context,
+            '/studentHeadDashboard',
+            arguments: {'token': token},
+          );
+        } else if (role == 'admin') {
+          Navigator.pushReplacementNamed(
+            context,
+            '/adminDashboard',
+            arguments: {'token': token},
+          );
+        } else {
+          // Default fallback
+          Navigator.pushReplacementNamed(
+            context,
+            '/home',
+            arguments: {'token': token},
+          );
+        }
+      } else {
+        setState(() {
+          errorMessage = 'Login failed: ' + response.body;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error: $e';
+      });
+      print('Login error: $e');
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> registerUser() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+    try {
+      final response = await http.post(
+        Uri.parse(registerUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'firstName': firstName,
+          'middleName': middleName,
+          'lastName': lastName,
+          'email': regEmail,
+          'phone': phone,
+          'rollNo': rollNo,
+          'college': college,
+          'department': department,
+          'password': regPassword,
+          'gender': gender,
+        }),
+      );
+      if (response.statusCode == 200) {
+        // Registration successful, handle navigation or show success
+        setState(() {
+          errorMessage = '';
+        });
+        // Example: Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        setState(() {
+          errorMessage = 'Registration failed: ' + response.body;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error: $e';
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
   bool showPassword = false;
   int activeTab = 0; // 0: Login, 1: Register
   final _formKey = GlobalKey<FormState>();
@@ -221,6 +337,11 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLoginForm() {
     return Column(
       children: [
+        if (errorMessage.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(errorMessage, style: TextStyle(color: Colors.red)),
+          ),
         TextFormField(
           decoration: InputDecoration(
             labelText: 'Email',
@@ -269,12 +390,14 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         SizedBox(height: 24),
         ElevatedButton(
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              // Handle login
-            }
-          },
-          child: Text('Sign In'),
+          onPressed: isLoading
+              ? null
+              : () {
+                  if (_formKey.currentState!.validate()) {
+                    loginUser();
+                  }
+                },
+          child: isLoading ? CircularProgressIndicator() : Text('Sign In'),
           style: ElevatedButton.styleFrom(
             minimumSize: Size(double.infinity, 48),
             shape: RoundedRectangleBorder(
@@ -482,12 +605,16 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         SizedBox(height: 24),
         ElevatedButton(
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              // Handle registration
-            }
-          },
-          child: Text('Create Account'),
+          onPressed: isLoading
+              ? null
+              : () {
+                  if (_formKey.currentState!.validate()) {
+                    registerUser();
+                  }
+                },
+          child: isLoading
+              ? CircularProgressIndicator()
+              : Text('Create Account'),
           style: ElevatedButton.styleFrom(
             minimumSize: Size(double.infinity, 48),
             shape: RoundedRectangleBorder(

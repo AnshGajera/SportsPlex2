@@ -392,7 +392,7 @@ const StudentHeadRequests = () => {
   };
 
   return (
-    <div className="container" style={{ padding: '32px 20px' }}>
+    <div style={{ padding: '20px' }}>
       {/* Notification Component */}
       {notification && (
         <div style={{

@@ -5,7 +5,6 @@ import SearchBar from '../components/SearchBar';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { sendPromotionEmail, sendDemotionEmail } from '../services/emailService';
-import StudentHeadRequests from '../components/StudentHead/StudentHeadRequests';
 
 const AdminUserManagement = () => {
   const location = useLocation();
@@ -286,14 +285,11 @@ const AdminUserManagement = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  // Check URL parameters to set initial tab
+  // Set initial tab
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const tab = urlParams.get('tab');
-    if (tab === 'student-head-requests') {
-      setActiveTab('studentHeadRequests');
-    }
-  }, [location.search]);
+    // Default to admins tab
+    setActiveTab('admins');
+  }, []);
 
   return (
     <div className="container" style={{ padding: '32px 20px' }}>
@@ -401,12 +397,6 @@ const AdminUserManagement = () => {
           >
             Student Heads
           </button>
-          <button
-            className={`tab ${activeTab === 'studentHeadRequests' ? 'active' : ''}`}
-            onClick={() => setActiveTab('studentHeadRequests')}
-          >
-            Student Head Requests
-          </button>
         </div>
 
         {/* Search bar positioned right after tabs */}
@@ -509,10 +499,6 @@ const AdminUserManagement = () => {
             </div>
           )}
         </>
-      )}
-
-      {activeTab === 'studentHeadRequests' && (
-        <StudentHeadRequests />
       )}
 
       {/* User Details Modal */}

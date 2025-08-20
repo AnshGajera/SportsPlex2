@@ -109,7 +109,7 @@ const UserDashboard = () => {
       title: hasRequestedStudentHead ? 'View Request Status' : 'Request Student Head',
       description: hasRequestedStudentHead ? 'Check your application status' : 'Apply for Student Head position',
       link: '/user/student-head-request',
-      color: '#fbbf24' // Gold
+      color: '#e5d0ff' // Light Purple
     });
   }
 

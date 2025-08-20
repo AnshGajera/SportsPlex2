@@ -8,6 +8,8 @@ const UserEquipment = () => {
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestEquipment, setRequestEquipment] = useState(null);
   const [requestDuration, setRequestDuration] = useState('');
+  const [requestPurpose, setRequestPurpose] = useState('');
+  const [requestQuantity, setRequestQuantity] = useState(1);
 
   const handleRequestClick = (equipment) => {
     setRequestEquipment(equipment);
@@ -16,21 +18,40 @@ const UserEquipment = () => {
 
   const handleSubmitRequest = async () => {
     try {
+      if (!requestDuration.trim()) {
+        alert('Please enter duration');
+        return;
+      }
+      
       await api.post('/equipment/request', {
         equipmentId: requestEquipment._id,
-        duration: requestDuration
+        duration: requestDuration,
+        quantityRequested: requestQuantity,
+        purpose: requestPurpose
       });
+      
       setRequestModalOpen(false);
       setRequestEquipment(null);
       setRequestDuration('');
-      alert('Request sent to admin!');
+      setRequestPurpose('');
+      setRequestQuantity(1);
+      alert('Request sent to admin successfully!');
+      
+      // Refresh data
+      fetchEquipment();
+      fetchMyRequests();
+      fetchAnalytics();
     } catch (error) {
-      alert('Error sending request');
+      console.error('Error sending request:', error);
+      const errorMessage = error.response?.data?.error || 'Error sending request';
+      alert(errorMessage);
     }
   };
 
   // State
   const [equipmentList, setEquipmentList] = useState([]);
+  const [myRequests, setMyRequests] = useState([]);
+  const [myAllocations, setMyAllocations] = useState([]);
   const [activeTab, setActiveTab] = useState('browse');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -38,7 +59,7 @@ const UserEquipment = () => {
     { icon: Package, count: 0, label: 'Total Equipment', color: '#3b82f6' },
     { icon: Clock, count: 0, label: 'Pending Requests', color: '#f59e0b' },
     { icon: CheckCircle, count: 0, label: 'Approved', color: '#10b981' },
-    { icon: XCircle, count: 0, label: 'Rejected', color: '#ef4444' }
+    { icon: XCircle, count: 0, label: 'Current Allocations', color: '#8b5cf6' }
   ]);
 
   const categories = [
@@ -52,20 +73,75 @@ const UserEquipment = () => {
     'Volleyball'
   ];
 
-  const myRequests = []; // Placeholder if needed later
+  // Fetch functions
+  const fetchEquipment = async () => {
+    try {
+      const response = await api.get('/equipment');
+      setEquipmentList(response.data);
+    } catch (error) {
+      console.error('Error fetching equipment:', error);
+    }
+  };
 
-  // Fetch equipment list from backend
+  const fetchMyRequests = async () => {
+    try {
+      const response = await api.get('/equipment/requests/my');
+      setMyRequests(response.data);
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+    }
+  };
+
+  const fetchMyAllocations = async () => {
+    try {
+      const response = await api.get('/equipment/allocations/my');
+      setMyAllocations(response.data);
+    } catch (error) {
+      console.error('Error fetching allocations:', error);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const userRequests = await api.get('/equipment/requests/my');
+      const userAllocations = await api.get('/equipment/allocations/my');
+      const equipmentResponse = await api.get('/equipment');
+      
+      const requests = userRequests.data;
+      const allocations = userAllocations.data;
+      const equipment = equipmentResponse.data;
+      
+      setAnalyticsData([
+        { icon: Package, count: equipment.length, label: 'Total Equipment', color: '#3b82f6' },
+        { icon: Clock, count: requests.filter(r => r.status === 'pending').length, label: 'Pending Requests', color: '#f59e0b' },
+        { icon: CheckCircle, count: requests.filter(r => r.status === 'approved').length, label: 'Approved', color: '#10b981' },
+        { icon: XCircle, count: allocations.length, label: 'Current Allocations', color: '#8b5cf6' }
+      ]);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
+  // useEffect hooks
   useEffect(() => {
-    const fetchEquipment = async () => {
-      try {
-        const response = await api.get('/equipment');
-        setEquipmentList(response.data);
-      } catch (error) {
-        console.error('Error fetching equipment:', error);
-      }
-    };
     fetchEquipment();
+    fetchMyRequests();
+    fetchMyAllocations();
+    fetchAnalytics();
   }, []);
+
+  // Filter equipment based on search and category
+  const filteredEquipment = equipmentList.filter(equipment => {
+    const matchesSearch = equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         equipment.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'All Categories' || equipment.category === selectedCategory;
+    
+    // Handle legacy equipment that doesn't have availableQuantity field
+    const availableQty = equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity;
+    const hasAvailableStock = availableQty > 0;
+    
+    return matchesSearch && matchesCategory && hasAvailableStock;
+  });
 
   return (
     <div className="container" style={{ padding: '32px 20px' }}>
@@ -171,6 +247,12 @@ const UserEquipment = () => {
           >
             My Requests
           </button>
+          <button
+            className={`tab ${activeTab === 'allocations' ? 'active' : ''}`}
+            onClick={() => setActiveTab('allocations')}
+          >
+            My Allocations
+          </button>
         </div>
 
         {activeTab === 'browse' && (
@@ -225,7 +307,7 @@ const UserEquipment = () => {
       {/* Browse Section */}
       {activeTab === 'browse' && (
         <div>
-          {equipmentList.length === 0 ? (
+          {filteredEquipment.length === 0 ? (
             <div className="empty-state">
               <Package size={64} className="empty-state-icon" />
               <h3
@@ -239,13 +321,15 @@ const UserEquipment = () => {
                 No equipment available
               </h3>
               <p style={{ marginBottom: '12px' }}>
-                Equipment inventory is currently empty. Check back later or
-                contact administrator.
+                {equipmentList.length === 0 
+                  ? 'Equipment inventory is currently empty. Check back later or contact administrator.'
+                  : 'No equipment matches your search criteria or all matching equipment is currently unavailable.'
+                }
               </p>
             </div>
           ) : (
             <div className="grid grid-1">
-              {equipmentList.map((equipment, index) => (
+              {filteredEquipment.map((equipment, index) => (
                 <div
                   key={index}
                   className="card"
@@ -269,7 +353,7 @@ const UserEquipment = () => {
                       Category: {equipment.category}
                     </p>
                     <p style={{ color: '#64748b', marginBottom: '8px' }}>
-                      Quantity: {equipment.quantity}
+                      Available: {equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity} / {equipment.quantity}
                     </p>
                     <p style={{ color: '#64748b', marginBottom: '8px' }}>
                       Condition: {equipment.condition}
@@ -284,8 +368,9 @@ const UserEquipment = () => {
                       className="btn btn-primary"
                       style={{ marginTop: '8px' }}
                       onClick={() => handleRequestClick(equipment)}
+                      disabled={(equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity) === 0}
                     >
-                      Request Equipment
+                      {(equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity) === 0 ? 'Not Available' : 'Request Equipment'}
                     </button>
                   </div>
                   {equipment.image && (
@@ -314,29 +399,77 @@ const UserEquipment = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
             <h2 className="text-xl font-semibold mb-4">Request Equipment</h2>
-            <p className="mb-2">
+            <p className="mb-4">
               Equipment: <b>{requestEquipment?.name}</b>
             </p>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Duration (hours or days)
-            </label>
-            <input
-              type="text"
-              value={requestDuration}
-              onChange={(e) => setRequestDuration(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4"
-              placeholder="Enter duration (e.g. 2 hours, 1 day)"
-            />
-            <div className="flex justify-end gap-3">
+            <p className="mb-4 text-sm text-gray-600">
+              Available: {requestEquipment?.availableQuantity !== undefined ? requestEquipment?.availableQuantity : requestEquipment?.quantity || 0} units
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quantity Needed
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={requestEquipment?.availableQuantity !== undefined ? requestEquipment?.availableQuantity : requestEquipment?.quantity || 1}
+                  value={requestQuantity}
+                  onChange={(e) => {
+                    const maxQty = requestEquipment?.availableQuantity !== undefined ? requestEquipment?.availableQuantity : requestEquipment?.quantity || 1;
+                    setRequestQuantity(Math.max(1, Math.min(
+                      parseInt(e.target.value) || 1, 
+                      maxQty
+                    )));
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Duration *
+                </label>
+                <input
+                  type="text"
+                  value={requestDuration}
+                  onChange={(e) => setRequestDuration(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                  placeholder="Enter duration (e.g. 2 hours, 1 day, 1 week)"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Purpose (Optional)
+                </label>
+                <textarea
+                  value={requestPurpose}
+                  onChange={(e) => setRequestPurpose(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg h-20 resize-none"
+                  placeholder="Describe the purpose for requesting this equipment"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
               <button
-                className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg"
-                onClick={() => setRequestModalOpen(false)}
+                className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                onClick={() => {
+                  setRequestModalOpen(false);
+                  setRequestDuration('');
+                  setRequestPurpose('');
+                  setRequestQuantity(1);
+                }}
               >
                 Cancel
               </button>
               <button
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 onClick={handleSubmitRequest}
+                disabled={!requestDuration.trim()}
               >
                 Send Request
               </button>
@@ -382,7 +515,7 @@ const UserEquipment = () => {
                       alignItems: 'start'
                     }}
                   >
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <h3
                         style={{
                           fontSize: '1.125rem',
@@ -390,11 +523,27 @@ const UserEquipment = () => {
                           marginBottom: '8px'
                         }}
                       >
-                        {request.equipment}
+                        {request.equipment?.name}
                       </h3>
-                      <p style={{ color: '#64748b', marginBottom: '8px' }}>
-                        Requested on: {request.date}
+                      <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                        Quantity: {request.quantityRequested}
                       </p>
+                      <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                        Duration: {request.duration}
+                      </p>
+                      {request.purpose && (
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Purpose: {request.purpose}
+                        </p>
+                      )}
+                      <p style={{ color: '#64748b', marginBottom: '8px' }}>
+                        Requested on: {new Date(request.createdAt).toLocaleDateString()}
+                      </p>
+                      {request.adminNotes && (
+                        <p style={{ color: '#64748b', marginBottom: '8px' }}>
+                          Admin Notes: {request.adminNotes}
+                        </p>
+                      )}
                       <span
                         style={{
                           display: 'inline-block',
@@ -403,25 +552,139 @@ const UserEquipment = () => {
                           fontSize: '12px',
                           fontWeight: '500',
                           backgroundColor:
-                            request.status === 'Approved'
+                            request.status === 'approved'
                               ? '#dcfce7'
-                              : request.status === 'Pending'
+                              : request.status === 'allocated'
+                              ? '#dbeafe'
+                              : request.status === 'returned'
+                              ? '#f3e8ff'
+                              : request.status === 'pending'
                               ? '#fef3c7'
                               : '#fee2e2',
                           color:
-                            request.status === 'Approved'
+                            request.status === 'approved'
                               ? '#166534'
-                              : request.status === 'Pending'
+                              : request.status === 'allocated'
+                              ? '#1e40af'
+                              : request.status === 'returned'
+                              ? '#7c3aed'
+                              : request.status === 'pending'
                               ? '#92400e'
                               : '#dc2626'
                         }}
                       >
-                        {request.status}
+                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </span>
                     </div>
+                    {request.equipment?.image && (
+                      <img
+                        src={`http://localhost:5000${request.equipment.image}`}
+                        alt={request.equipment.name}
+                        style={{
+                          width: '80px',
+                          height: '60px',
+                          borderRadius: '8px',
+                          marginLeft: '16px',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* My Allocations Section - Add new tab */}
+      {activeTab === 'allocations' && (
+        <div>
+          {myAllocations.length === 0 ? (
+            <div className="empty-state">
+              <Package size={64} className="empty-state-icon" />
+              <h3
+                style={{
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  marginBottom: '8px',
+                  color: '#374151'
+                }}
+              >
+                No current allocations
+              </h3>
+              <p style={{ marginBottom: '12px' }}>
+                You don't have any equipment currently allocated to you.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-1">
+              {myAllocations.map((allocation, index) => {
+                const isOverdue = new Date() > new Date(allocation.expectedReturnDate);
+                return (
+                  <div key={index} className="card">
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'start'
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <h3
+                          style={{
+                            fontSize: '1.125rem',
+                            fontWeight: '600',
+                            marginBottom: '8px'
+                          }}
+                        >
+                          {allocation.equipment?.name}
+                        </h3>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Quantity: {allocation.quantityAllocated}
+                        </p>
+                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
+                          Allocated on: {new Date(allocation.allocationDate).toLocaleDateString()}
+                        </p>
+                        <p style={{ 
+                          color: isOverdue ? '#dc2626' : '#64748b', 
+                          marginBottom: '8px',
+                          fontWeight: isOverdue ? '600' : 'normal'
+                        }}>
+                          Return by: {new Date(allocation.expectedReturnDate).toLocaleDateString()}
+                          {isOverdue && ' (OVERDUE)'}
+                        </p>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            backgroundColor: isOverdue ? '#fee2e2' : '#dbeafe',
+                            color: isOverdue ? '#dc2626' : '#1e40af'
+                          }}
+                        >
+                          {isOverdue ? 'Overdue' : 'Allocated'}
+                        </span>
+                      </div>
+                      {allocation.equipment?.image && (
+                        <img
+                          src={`http://localhost:5000${allocation.equipment.image}`}
+                          alt={allocation.equipment.name}
+                          style={{
+                            width: '80px',
+                            height: '60px',
+                            borderRadius: '8px',
+                            marginLeft: '16px',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
