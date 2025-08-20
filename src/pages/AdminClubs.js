@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Users, Star, Trophy, Calendar, Plus } from 'lucide-react';
+import { 
+  Search, Users, Star, Trophy, Calendar, Plus, Trash2, Edit, MoreVertical,
+  Settings, Image as ImageIcon, Share2, Copy, ExternalLink, BarChart3,
+  UserPlus, Filter, SortAsc, SortDesc, Grid, List, Eye
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import SearchBar from '../components/SearchBar';
 import AddClubModal from '../components/Modals/AddClubModal';
+import EditClubModal from '../components/Modals/EditClubModal';
 import api from '../services/api';
 
 const AdminClubs = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingClub, setEditingClub] = useState(null);
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
@@ -120,6 +127,42 @@ const AdminClubs = () => {
       const errorMessage = error.response?.data?.message || 'Failed to create club. Please try again.';
       alert(`Error: ${errorMessage}`);
     }
+  };
+
+  const handleDeleteClub = async (clubId, clubName) => {
+    if (!window.confirm(`Are you sure you want to delete "${clubName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/clubs/${clubId}`);
+      
+      // Remove the club from local state
+      setClubs(prevClubs => prevClubs.filter(club => club._id !== clubId));
+      
+      // Update analytics
+      setAnalyticsData(prev => [
+        { ...prev[0], count: prev[0].count - 1 },
+        ...prev.slice(1)
+      ]);
+      
+      alert('Club deleted successfully');
+    } catch (error) {
+      console.error('Error deleting club:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete club. Please try again.';
+      alert(`Error: ${errorMessage}`);
+    }
+  };
+
+  const handleClubUpdated = (updatedClub) => {
+    setClubs(prev => prev.map(club => 
+      club._id === updatedClub._id ? updatedClub : club
+    ));
+  };
+
+  const handleEditClub = (club) => {
+    setEditingClub(club);
+    setIsEditModalOpen(true);
   };
 
   return (
@@ -293,7 +336,12 @@ const AdminClubs = () => {
                 club.category.toLowerCase().includes(searchTerm.toLowerCase())
               )
               .map((club, index) => (
-                <ClubCard key={club._id || index} club={club} />
+                <ClubCard 
+                  key={club._id || index} 
+                  club={club} 
+                  onDelete={handleDeleteClub}
+                  onEdit={handleEditClub}
+                />
               ))
             }
           </div>
@@ -306,16 +354,79 @@ const AdminClubs = () => {
         onClose={() => setIsAddModalOpen(false)}
         onSubmit={handleAddClub}
       />
+
+      {/* Edit Club Modal */}
+      <EditClubModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingClub(null);
+        }}
+        club={editingClub}
+        onClubUpdated={handleClubUpdated}
+      />
     </div>
   );
 };
 
 // ClubCard component
-const ClubCard = ({ club }) => {
+const ClubCard = ({ club, onDelete, onEdit }) => {
   const navigate = useNavigate();
+  const [showActions, setShowActions] = useState(false);
 
-  const handleCardClick = () => {
+  // Close actions menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = () => setShowActions(false);
+    if (showActions) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showActions]);
+
+  const handleCardClick = (e) => {
+    // Don't navigate if clicking on action buttons
+    if (e.target.closest('.club-actions')) {
+      return;
+    }
     navigate(`/admin/clubs/${club._id}`);
+  };
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    onDelete(club._id, club.name);
+    setShowActions(false);
+  };
+
+  const handleEdit = (e) => {
+    e.stopPropagation();
+    onEdit(club);
+    setShowActions(false);
+  };
+
+  const handleViewDetails = (e) => {
+    e.stopPropagation();
+    navigate(`/admin/clubs/${club._id}`);
+    setShowActions(false);
+  };
+
+  const handleManageMembers = (e) => {
+    e.stopPropagation();
+    navigate(`/admin/clubs/${club._id}#members`);
+    setShowActions(false);
+  };
+
+  const handleAnalytics = (e) => {
+    e.stopPropagation();
+    navigate(`/admin/clubs/${club._id}/analytics`);
+    setShowActions(false);
+  };
+
+  const handleShareClub = (e) => {
+    e.stopPropagation();
+    const clubUrl = `${window.location.origin}/clubs/${club._id}`;
+    navigator.clipboard.writeText(clubUrl);
+    alert('Club link copied to clipboard!');
+    setShowActions(false);
   };
 
   const handleImageError = (e) => {
@@ -337,7 +448,8 @@ const ClubCard = ({ club }) => {
       border: '1px solid #e5e7eb',
       overflow: 'hidden',
       transition: 'all 0.2s ease',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      position: 'relative'
     }}
     onMouseEnter={e => {
       e.currentTarget.style.transform = 'translateY(-2px)';
@@ -347,6 +459,78 @@ const ClubCard = ({ club }) => {
       e.currentTarget.style.transform = 'translateY(0)';
       e.currentTarget.style.boxShadow = 'none';
     }}>
+      
+      {/* Action Menu */}
+      <div className="club-actions absolute top-3 right-3 z-10">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowActions(!showActions);
+          }}
+          className="w-8 h-8 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all shadow-sm"
+        >
+          <MoreVertical size={16} className="text-gray-600" />
+        </button>
+        
+        {showActions && (
+          <div 
+            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={handleEdit}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center rounded-t-lg"
+            >
+              <Edit size={14} className="mr-2" />
+              Edit Club Details
+            </button>
+            
+            <button
+              onClick={handleViewDetails}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+            >
+              <Eye size={14} className="mr-2" />
+              View Details
+            </button>
+            
+            <button
+              onClick={handleManageMembers}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+            >
+              <UserPlus size={14} className="mr-2" />
+              Manage Members
+            </button>
+            
+            <button
+              onClick={handleAnalytics}
+              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+            >
+              <BarChart3 size={14} className="mr-2" />
+              View Analytics
+            </button>
+            
+            <hr className="border-gray-100 my-1" />
+            
+            <button
+              onClick={handleShareClub}
+              className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center"
+            >
+              <Share2 size={14} className="mr-2" />
+              Share Club Link
+            </button>
+            
+            <hr className="border-gray-100 my-1" />
+            
+            <button
+              onClick={handleDelete}
+              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center rounded-b-lg"
+            >
+              <Trash2 size={14} className="mr-2" />
+              Delete Club
+            </button>
+          </div>
+        )}
+      </div>
       {/* Club Image/Logo */}
       <div style={{
         height: '180px',
