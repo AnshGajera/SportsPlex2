@@ -255,261 +255,264 @@ const AdminClubDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => navigate('/admin/clubs')}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4"
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            Back to Clubs
-          </button>
+      {/* Simple Navigation - No Card */}
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate('/admin/clubs')}
+              className="flex items-center text-gray-600 hover:text-blue-600 transition-colors px-3 py-2 rounded-lg hover:bg-blue-50"
+            >
+              <ArrowLeft size={20} className="mr-2" />
+              <span className="font-medium">Clubs</span>
+            </button>
+            <div className="text-gray-300">/</div>
+            <span className="text-gray-900 font-semibold">{club.name}</span>
+          </div>
+          <span className={`px-4 py-2 rounded-lg text-sm font-medium ${
+            club.isActive 
+              ? 'bg-green-100 text-green-700 border border-green-200' 
+              : 'bg-red-100 text-red-700 border border-red-200'
+          }`}>
+            {club.isActive ? '● Active' : '● Inactive'}
+          </span>
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Club Header */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
-          <div className="relative">
-            {/* Club Image */}
-            <div className="h-48 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+        <div className="space-y-8">
+        {/* Club Header - No Card Wrapper */}
+        <div className="mb-6">
+          <div className="flex items-start gap-6 mb-6">
+            {/* Club Logo */}
+            <div className="flex-shrink-0">
               {club.image ? (
-                <img
-                  src={`http://localhost:5000${club.image}`}
-                  alt={club.name}
-                  className="w-full h-full object-cover"
-                />
+                <div className="w-20 h-20 rounded-xl overflow-hidden shadow-md border border-gray-200">
+                  <img
+                    src={`http://localhost:5000${club.image}`}
+                    alt={club.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               ) : (
-                <div className="text-center text-white">
-                  <Users size={48} className="mx-auto mb-2" />
-                  <h1 className="text-3xl font-bold">{club.name}</h1>
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                  <span className="text-2xl font-bold text-white">
+                    {club.name.charAt(0)}
+                  </span>
                 </div>
               )}
             </div>
+            
+            {/* Club Info */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">{club.name}</h1>
+              <div className="flex items-center gap-4 mb-4">
+                <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+                  {club.category}
+                </span>
+                <span className="flex items-center text-gray-600 text-sm">
+                  <Users size={16} className="mr-2 text-blue-500" />
+                  {club.members?.length || 0} Members
+                </span>
+                <span className="flex items-center text-gray-600 text-sm">
+                  <Calendar size={16} className="mr-2 text-green-500" />
+                  {formatDate(club.createdAt)}
+                </span>
+              </div>
+              <p className="text-gray-700 text-lg leading-relaxed">{club.description}</p>
+            </div>
           </div>
 
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">{club.name}</h1>
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">
-                    {club.category}
-                  </span>
-                  <span className="flex items-center">
-                    <Users size={16} className="mr-1" />
-                    {club.members?.length || 0} members
-                  </span>
-                  <span className="flex items-center">
-                    <Calendar size={16} className="mr-1" />
-                    Created {formatDate(club.createdAt)}
-                  </span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    club.isActive 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {club.isActive ? 'Active' : 'Inactive'}
-                  </span>
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-3 mb-6">
+            <button
+              onClick={() => setIsCreateEventModalOpen(true)}
+              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center text-sm shadow-md"
+            >
+              <Plus size={16} className="mr-2" />
+              Create Event
+            </button>
+            <button
+              onClick={exportToExcel}
+              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center text-sm shadow-md"
+            >
+              <Download size={16} className="mr-2" />
+              Export Data
+            </button>
+            <button 
+              onClick={() => setIsEditModalOpen(true)}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center text-sm shadow-md"
+            >
+              <Edit size={16} className="mr-2" />
+              Edit Club
+            </button>
+            <button 
+              onClick={() => setShowDeleteModal(true)}
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center text-sm shadow-md"
+            >
+              <Trash2 size={16} className="mr-2" />
+              Delete Club
+            </button>
+          </div>
+
+          {/* Requirements */}
+          {club.requirements && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Shield size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-amber-900 text-sm mb-1">Membership Requirements</h3>
+                  <p className="text-amber-800 text-sm">{club.requirements}</p>
                 </div>
               </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setIsCreateEventModalOpen(true)}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Create Event
-                </button>
-                <button
-                  onClick={exportToExcel}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
-                >
-                  <Download size={16} className="mr-2" />
-                  Export Excel
-                </button>
-                <button 
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-                >
-                  <Edit size={16} className="mr-2" />
-                  Edit Club
-                </button>
-                <button 
-                  onClick={() => setShowDeleteModal(true)}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center"
-                >
-                  <Trash2 size={16} className="mr-2" />
-                  Delete Club
-                </button>
-              </div>
             </div>
-
-            <p className="text-gray-700 mb-4">{club.description}</p>
-
-            {club.requirements && (
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-medium text-gray-900 mb-2">Membership Requirements:</h3>
-                <p className="text-gray-700">{club.requirements}</p>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        {/* Members Section */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6 border-b">
-            <div className="flex justify-between items-center mb-4">
+        {/* Members Section - No Card Wrapper */}
+        <div>
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Club Members</h2>
-                <p className="text-gray-600">Manage club membership and roles</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Club Members</h2>
+                <p className="text-gray-600">Manage membership and assign roles</p>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center gap-4">
                 <div className="relative">
-                  <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Search members..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    className="pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm w-72 bg-white shadow-sm"
                   />
                 </div>
-                <span className="text-sm text-gray-500">
-                  {filteredMembers.length} of {club.members?.length || 0} members
-                </span>
+                <div className="bg-gray-100 px-4 py-3 rounded-lg border border-gray-300">
+                  <span className="text-sm font-medium text-gray-700">
+                    {filteredMembers.length} of {club.members?.length || 0} members
+                  </span>
+                </div>
               </div>
             </div>
+            <div className="border-b border-gray-200"></div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Member Profile
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact Information
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Roles & Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Membership Timeline
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredMembers.map((member, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-medium">
-                            {member.user.firstName.charAt(0)}{member.user.lastName.charAt(0)}
-                          </span>
+          {/* Members List */}
+          {filteredMembers.length === 0 ? (
+            <div className="text-center py-16">
+              <Users size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No members found</h3>
+              <p className="text-gray-500 text-sm max-w-md mx-auto">
+                {searchTerm ? 'No members match your search criteria. Try adjusting your search terms.' : 'This club doesn\'t have any members yet. Invite members to get started.'}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredMembers.map((member, index) => (
+                <div key={index} className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-all duration-200 shadow-sm">
+                  {/* Member Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+                        <span className="text-white font-semibold text-sm">
+                          {member.user.firstName.charAt(0)}{member.user.lastName.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-sm leading-tight">
+                          {member.user.firstName} {member.user.lastName}
+                        </h3>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
+                          {getRoleIcon(member.role)}
+                          <span className="ml-1">{getRoleDisplayName(member.role)}</span>
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Action Menu */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setActionMenuOpen(actionMenuOpen === index ? null : index)}
+                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                      
+                      {actionMenuOpen === index && (
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-20 py-1">
+                          <button
+                            onClick={() => handleViewProfile(member.user._id)}
+                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 flex items-center"
+                          >
+                            <User size={14} className="mr-3 text-blue-600" />
+                            View Profile
+                          </button>
+                          <div className="border-t border-gray-100 my-1"></div>
+                          <button
+                            onClick={() => handleChangeMemberRole(member.user._id, 'club_head')}
+                            disabled={member.role === 'club_head'}
+                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-yellow-50 disabled:opacity-50 flex items-center"
+                          >
+                            <Crown size={14} className="mr-3 text-yellow-600" />
+                            Make Club Head
+                          </button>
+                          <button
+                            onClick={() => handleChangeMemberRole(member.user._id, 'moderator')}
+                            disabled={member.role === 'moderator'}
+                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-blue-50 disabled:opacity-50 flex items-center"
+                          >
+                            <Shield size={14} className="mr-3 text-blue-600" />
+                            Make Moderator
+                          </button>
+                          <button
+                            onClick={() => handleChangeMemberRole(member.user._id, 'member')}
+                            disabled={member.role === 'member'}
+                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                          >
+                            <User size={14} className="mr-3 text-gray-600" />
+                            Make Member
+                          </button>
+                          <div className="border-t border-gray-100 my-1"></div>
+                          <button
+                            onClick={() => handleRemoveMember(member.user._id)}
+                            className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center"
+                          >
+                            <UserX size={14} className="mr-3" />
+                            Remove Member
+                          </button>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {member.user.firstName} {member.user.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            Roll No: {member.user.rollNo || 'N/A'}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {member.user.college} - {member.user.department}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.user.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(member.role)}`}>
-                        {getRoleIcon(member.role)}
-                        <span className="ml-1">{getRoleDisplayName(member.role)}</span>
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {formatDate(member.joinedAt)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="relative">
-                        <button
-                          onClick={() => setActionMenuOpen(actionMenuOpen === index ? null : index)}
-                          className="text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-                        
-                        {actionMenuOpen === index && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                            <div className="py-1">
-                              <button
-                                onClick={() => handleViewProfile(member.user._id)}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                              >
-                                <User size={14} className="inline mr-2" />
-                                View Profile
-                              </button>
-                              <hr className="my-1" />
-                              <button
-                                onClick={() => handleChangeMemberRole(member.user._id, 'club_head')}
-                                disabled={member.role === 'club_head'}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                              >
-                                Make Club Head
-                              </button>
-                              <button
-                                onClick={() => handleChangeMemberRole(member.user._id, 'moderator')}
-                                disabled={member.role === 'moderator'}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                              >
-                                Make Moderator
-                              </button>
-                              <button
-                                onClick={() => handleChangeMemberRole(member.user._id, 'member')}
-                                disabled={member.role === 'member'}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                              >
-                                Make Member
-                              </button>
-                              <hr className="my-1" />
-                              <button
-                                onClick={() => handleRemoveMember(member.user._id)}
-                                className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-                              >
-                                <UserX size={14} className="inline mr-2" />
-                                Remove Member
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      )}
+                    </div>
+                  </div>
 
-            {filteredMembers.length === 0 && (
-              <div className="text-center py-12">
-                <Users size={48} className="mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No members found</h3>
-                <p className="text-gray-500">
-                  {searchTerm ? 'No members match your search criteria.' : 'This club has no members yet.'}
-                </p>
-              </div>
-            )}
-          </div>
+                  {/* Member Details */}
+                  <div className="space-y-3">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Mail size={14} className="mr-2 text-blue-500 flex-shrink-0" />
+                      <span className="truncate">{member.user.email}</span>
+                    </div>
+                    
+                    {member.user.rollNo && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <span className="w-3.5 h-3.5 bg-green-500 rounded-full mr-2 flex-shrink-0"></span>
+                        <span>Roll: {member.user.rollNo}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center text-sm text-gray-600">
+                      <span className="w-3.5 h-3.5 bg-purple-500 rounded-full mr-2 flex-shrink-0"></span>
+                      <span className="truncate">{member.user.college} - {member.user.department}</span>
+                    </div>
+                    
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Calendar size={14} className="mr-2 text-orange-500 flex-shrink-0" />
+                      <span>Joined {new Date(member.joinedAt).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -574,6 +577,7 @@ const AdminClubDetail = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
