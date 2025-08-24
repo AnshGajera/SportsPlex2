@@ -16,7 +16,7 @@ class _StudentMatchesState extends State<StudentMatches> {
 
   Future<void> fetchMatches() async {
     final response = await http.get(
-      Uri.parse('http://10.63.134.100:5000/api/matches'),
+      Uri.parse('http://192.168.43.154:5000/api/matches'),
     );
     if (response.statusCode == 200) {
       setState(() {
@@ -39,22 +39,48 @@ class _StudentMatchesState extends State<StudentMatches> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Matches')),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: matches.length,
-              itemBuilder: (context, index) {
-                final match = matches[index];
-                return Card(
-                  margin: EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(match['title'] ?? 'Match'),
-                    subtitle: Text('Date: ${match['date'] ?? 'N/A'}'),
-                  ),
-                );
-              },
+      appBar: AppBar(title: Text('Live Matches')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ongoing Matches',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+            SizedBox(height: 16),
+            Expanded(
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      itemCount: matches.length,
+                      itemBuilder: (context, index) {
+                        final match = matches[index];
+                        return Card(
+                          margin: EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.sports_cricket,
+                              color: Colors.orange,
+                            ),
+                            title: Text(match['title'] ?? 'Match $index'),
+                            subtitle: Text('Date: ${match['date'] ?? 'N/A'}'),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              // Navigate to match details
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

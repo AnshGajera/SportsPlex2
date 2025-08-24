@@ -16,7 +16,7 @@ class _StudentEquipmentState extends State<StudentEquipment> {
 
   Future<void> fetchEquipment() async {
     final response = await http.get(
-      Uri.parse('http://10.63.134.100:5000/api/equipment'),
+      Uri.parse('http://192.168.43.154:5000/api/equipment'),
     );
     if (response.statusCode == 200) {
       setState(() {
@@ -39,22 +39,35 @@ class _StudentEquipmentState extends State<StudentEquipment> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Equipment')),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: equipment.length,
-              itemBuilder: (context, index) {
-                final item = equipment[index];
-                return Card(
-                  margin: EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(item['name'] ?? 'Equipment'),
-                    subtitle: Text('Type: ${item['type'] ?? 'N/A'}'),
-                  ),
-                );
-              },
-            ),
+      appBar: AppBar(title: Text('My Equipment')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : equipment.isEmpty
+            ? Center(child: Text('No equipment found'))
+            : ListView.builder(
+                itemCount: equipment.length,
+                itemBuilder: (context, index) {
+                  final item = equipment[index];
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      leading: Icon(Icons.sports_baseball, color: Colors.green),
+                      title: Text(item['name'] ?? 'Equipment'),
+                      subtitle: Text(item['description'] ?? ''),
+                      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        // Navigate to equipment details
+                      },
+                    ),
+                  );
+                },
+              ),
+      ),
     );
   }
 }
