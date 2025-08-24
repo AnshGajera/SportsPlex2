@@ -39,21 +39,52 @@ class _AdminAnnouncementsState extends State<AdminAnnouncements> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Announcements')),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: announcements.length,
-              itemBuilder: (context, index) {
-                final announcement = announcements[index];
-                return Card(
-                  margin: EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(announcement['title'] ?? 'Announcement'),
-                    subtitle: Text(announcement['description'] ?? ''),
-                  ),
-                );
-              },
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Latest Announcements',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+            SizedBox(height: 16),
+            Expanded(
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      itemCount: announcements.length,
+                      itemBuilder: (context, index) {
+                        final announcement = announcements[index];
+                        return Card(
+                          margin: EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.announcement,
+                              color: Colors.purple,
+                            ),
+                            title: Text(
+                              announcement['title'] ?? 'Announcement $index',
+                            ),
+                            subtitle: Text(
+                              announcement['description'] ??
+                                  'Details of announcement $index',
+                            ),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              // Navigate to announcement details
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

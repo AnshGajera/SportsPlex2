@@ -16,7 +16,7 @@ class _StudentClubsState extends State<StudentClubs> {
 
   Future<void> fetchClubs() async {
     final response = await http.get(
-      Uri.parse('http://10.63.134.100:5000/api/clubs'),
+      Uri.parse('http://192.168.43.154:5000/api/clubs'),
     );
     if (response.statusCode == 200) {
       setState(() {
@@ -39,24 +39,50 @@ class _StudentClubsState extends State<StudentClubs> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Clubs')),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: clubs.length,
-              itemBuilder: (context, index) {
-                final club = clubs[index];
-                return Card(
-                  margin: EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(club['name'] ?? 'Club'),
-                    subtitle: Text(
-                      'Department: ${club['department'] ?? 'N/A'}',
-                    ),
-                  ),
-                );
-              },
+      appBar: AppBar(title: Text('My Clubs')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your Clubs',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+            SizedBox(height: 16),
+            Expanded(
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      itemCount: clubs.length,
+                      itemBuilder: (context, index) {
+                        final club = clubs[index];
+                        return Card(
+                          margin: EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.sports_soccer,
+                              color: Colors.blue,
+                            ),
+                            title: Text(club['name'] ?? 'Club Name $index'),
+                            subtitle: Text(
+                              'Department: ${club['department'] ?? 'N/A'}',
+                            ),
+                            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+                            onTap: () {
+                              // Navigate to club details
+                            },
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

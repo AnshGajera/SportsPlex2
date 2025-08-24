@@ -53,7 +53,15 @@ router.post('/register', registerUser);
 
 // @route   POST /api/auth/login
 // @desc    Authenticate a user (user or admin) with email/password
-router.post('/login', loginUser);
+router.post('/login', async (req, res) => {
+  console.log('🔑 LOGIN ATTEMPT:', req.body);
+  try {
+    await loginUser(req, res);
+  } catch (error) {
+    console.error('❌ LOGIN ERROR:', error);
+    res.status(500).json({ message: 'Login failed', error: error.message });
+  }
+});
 
 // @route   POST /api/auth/google
 // @desc    Authenticate or register a user via Google Sign-In

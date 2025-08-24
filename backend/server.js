@@ -27,10 +27,19 @@ app.use('/auth', authRoutes);
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/clubs', clubRoutes);
-app.use('/api/matches', matchRoutes);
+app.use('/api/clubs', (req, res, next) => {
+  console.log('🔎 /api/clubs route hit');
+  next();
+}, clubRoutes);
+app.use('/api/matches', (req, res, next) => {
+  console.log('🔎 /api/matches route hit');
+  next();
+}, matchRoutes);
 app.use('/api/events', require('./routes/events'));
-app.use('/api/equipment', require('./routes/equipment_working'));
+app.use('/api/equipment', (req, res, next) => {
+  console.log('🔎 /api/equipment route hit');
+  next();
+}, require('./routes/equipment_working'));
 app.use('/api/student-head-requests', studentHeadRequestRoutes);
 
 const uri = 'mongodb+srv://yashcoltd:pixmamg2576@charusatcomplex.qcqgdez.mongodb.net/?retryWrites=true&w=majority&appName=charusatComplex';
@@ -45,4 +54,4 @@ app.get('/', (req, res) => {
 });
 
 const PORT = 5000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`✅ Server running on port ${PORT}`));
