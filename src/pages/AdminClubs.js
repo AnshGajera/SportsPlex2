@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Search, Users, Star, Trophy, Calendar, Plus, Trash2, Edit, MoreVertical,
-  Settings, Image as ImageIcon, Share2, Copy, ExternalLink, BarChart3,
-  UserPlus, Filter, SortAsc, SortDesc, Grid, List, Eye
+  Search, Users, Star, Trophy, Calendar, Plus, Edit
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import SearchBar from '../components/SearchBar';
@@ -372,61 +370,18 @@ const AdminClubs = () => {
 // ClubCard component
 const ClubCard = ({ club, onDelete, onEdit }) => {
   const navigate = useNavigate();
-  const [showActions, setShowActions] = useState(false);
-
-  // Close actions menu when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = () => setShowActions(false);
-    if (showActions) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [showActions]);
 
   const handleCardClick = (e) => {
-    // Don't navigate if clicking on action buttons
-    if (e.target.closest('.club-actions')) {
+    // Don't navigate if clicking on edit button
+    if (e.target.closest('.edit-button')) {
       return;
     }
     navigate(`/admin/clubs/${club._id}`);
   };
 
-  const handleDelete = (e) => {
-    e.stopPropagation();
-    onDelete(club._id, club.name);
-    setShowActions(false);
-  };
-
   const handleEdit = (e) => {
     e.stopPropagation();
     onEdit(club);
-    setShowActions(false);
-  };
-
-  const handleViewDetails = (e) => {
-    e.stopPropagation();
-    navigate(`/admin/clubs/${club._id}`);
-    setShowActions(false);
-  };
-
-  const handleManageMembers = (e) => {
-    e.stopPropagation();
-    navigate(`/admin/clubs/${club._id}#members`);
-    setShowActions(false);
-  };
-
-  const handleAnalytics = (e) => {
-    e.stopPropagation();
-    navigate(`/admin/clubs/${club._id}/analytics`);
-    setShowActions(false);
-  };
-
-  const handleShareClub = (e) => {
-    e.stopPropagation();
-    const clubUrl = `${window.location.origin}/clubs/${club._id}`;
-    navigator.clipboard.writeText(clubUrl);
-    alert('Club link copied to clipboard!');
-    setShowActions(false);
   };
 
   const handleImageError = (e) => {
@@ -442,201 +397,162 @@ const ClubCard = ({ club, onDelete, onEdit }) => {
   return (
     <div 
       onClick={handleCardClick}
-      style={{
-      background: '#fff',
-      borderRadius: '12px',
-      border: '1px solid #e5e7eb',
-      overflow: 'hidden',
-      transition: 'all 0.2s ease',
-      cursor: 'pointer',
-      position: 'relative'
-    }}
-    onMouseEnter={e => {
-      e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
-    }}
-    onMouseLeave={e => {
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = 'none';
-    }}>
-      
-      {/* Action Menu */}
-      <div className="club-actions absolute top-3 right-3 z-10">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowActions(!showActions);
-          }}
-          className="w-8 h-8 bg-white bg-opacity-90 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all shadow-sm"
-        >
-          <MoreVertical size={16} className="text-gray-600" />
-        </button>
-        
-        {showActions && (
-          <div 
-            className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-20"
-            onClick={(e) => e.stopPropagation()}
+      className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden cursor-pointer group"
+    >
+      {/* Header Section with Title */}
+      <div className="p-4 border-b border-gray-100">
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0 pr-3">
+            <h3 className="text-lg font-semibold text-gray-900 leading-tight group-hover:text-blue-600 transition-colors truncate">
+              {club.name}
+            </h3>
+            <span className="inline-block mt-2 px-3 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded-full">
+              {club.category}
+            </span>
+          </div>
+          
+          {/* Edit Button */}
+          <button
+            onClick={handleEdit}
+            className="edit-button p-2 rounded-lg hover:bg-blue-50 transition-colors text-gray-400 hover:text-blue-600 flex-shrink-0"
+            title="Edit Club"
           >
-            <button
-              onClick={handleEdit}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center rounded-t-lg"
-            >
-              <Edit size={14} className="mr-2" />
-              Edit Club Details
-            </button>
-            
-            <button
-              onClick={handleViewDetails}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-            >
-              <Eye size={14} className="mr-2" />
-              View Details
-            </button>
-            
-            <button
-              onClick={handleManageMembers}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-            >
-              <UserPlus size={14} className="mr-2" />
-              Manage Members
-            </button>
-            
-            <button
-              onClick={handleAnalytics}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-            >
-              <BarChart3 size={14} className="mr-2" />
-              View Analytics
-            </button>
-            
-            <hr className="border-gray-100 my-1" />
-            
-            <button
-              onClick={handleShareClub}
-              className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center"
-            >
-              <Share2 size={14} className="mr-2" />
-              Share Club Link
-            </button>
-            
-            <hr className="border-gray-100 my-1" />
-            
-            <button
-              onClick={handleDelete}
-              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center rounded-b-lg"
-            >
-              <Trash2 size={14} className="mr-2" />
-              Delete Club
-            </button>
-          </div>
-        )}
+            <Edit size={18} />
+          </button>
+        </div>
       </div>
-      {/* Club Image/Logo */}
-      <div style={{
-        height: '180px',
-        background: club.image 
-          ? '#f8f9fa' 
-          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden'
-      }}>
-        {club.image ? (
-          <img
-            src={imageUrl}
-            alt={`${club.name} logo`}
-            onError={handleImageError}
-            onLoad={() => console.log('Image loaded successfully:', imageUrl)}
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain', // This ensures the logo fits properly without cropping
-              objectPosition: 'center',
-              padding: '20px', // Add some padding so logo doesn't touch edges
-              backgroundColor: '#ffffff'
-            }}
-          />
-        ) : (
-          // Fallback: Display club name initials if no image
-          <div style={{
-            fontSize: '48px',
-            fontWeight: 'bold',
-            color: 'white',
-            textAlign: 'center'
-          }}>
-            {club.name.charAt(0).toUpperCase()}
+
+      {/* Club Logo/Image Section - Redesigned */}
+      <div className="px-4 pt-2">
+        <div className="relative h-48 bg-gradient-to-br from-gray-50 to-white rounded-xl overflow-hidden border-2 border-gray-100 group-hover:border-blue-200 transition-all duration-300 shadow-inner">
+          {/* Dynamic Background Pattern */}
+          <div className="absolute inset-0 opacity-[0.03]">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `
+                radial-gradient(circle at 25% 25%, #3b82f6 2px, transparent 2px),
+                radial-gradient(circle at 75% 75%, #8b5cf6 2px, transparent 2px),
+                radial-gradient(circle at 50% 50%, #10b981 1px, transparent 1px)
+              `,
+              backgroundSize: '60px 60px, 80px 80px, 40px 40px'
+            }}></div>
           </div>
-        )}
-        
-        {/* Category Badge */}
-        <div style={{
-          position: 'absolute',
-          top: '12px',
-          right: '12px',
-          background: 'rgba(255,255,255,0.9)',
-          padding: '4px 8px',
-          borderRadius: '12px',
-          fontSize: '12px',
-          fontWeight: '500',
-          color: '#374151'
-        }}>
-          {club.category}
+          
+          {/* Main Content Container */}
+          <div className="relative h-full flex items-center justify-center p-4">
+            {club.image ? (
+              <div className="relative w-full h-full flex items-center justify-center">
+                {/* Premium Logo Container */}
+                <div className="relative max-w-full max-h-full flex items-center justify-center">
+                  <div className="relative">
+                    <img
+                      src={imageUrl}
+                      alt={`${club.name} logo`}
+                      onError={handleImageError}
+                      className="max-w-full max-h-full object-contain group-hover:scale-105 transition-all duration-700 ease-out"
+                      style={{ 
+                        filter: 'drop-shadow(0 10px 25px rgba(0, 0, 0, 0.1)) drop-shadow(0 4px 10px rgba(59, 130, 246, 0.1))',
+                        maxWidth: '200px',
+                        maxHeight: '200px'
+                      }}
+                    />
+                    {/* Subtle animated glow behind logo */}
+                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-blue-200/20 via-purple-200/20 to-blue-200/20 rounded-lg blur-xl group-hover:blur-2xl transition-all duration-700"></div>
+                  </div>
+                </div>
+                
+                {/* Floating decorative elements */}
+                <div className="absolute top-4 left-4 w-3 h-3 bg-blue-400/30 rounded-full animate-pulse"></div>
+                <div className="absolute bottom-6 right-6 w-2 h-2 bg-purple-400/30 rounded-full animate-pulse delay-300"></div>
+                <div className="absolute top-1/3 right-4 w-1.5 h-1.5 bg-green-400/30 rounded-full animate-pulse delay-700"></div>
+              </div>
+            ) : (
+              /* Enhanced Premium Fallback Design */
+              <div className="text-center relative w-full">
+                {/* Main Logo Circle with Modern Design */}
+                <div className="relative mb-4 flex justify-center">
+                  <div className="relative">
+                    {/* Main gradient circle */}
+                    <div className="w-24 h-24 bg-gradient-to-br from-blue-500 via-purple-600 to-indigo-700 rounded-2xl flex items-center justify-center mx-auto shadow-2xl relative overflow-hidden group-hover:scale-105 transition-all duration-500 border border-white/20">
+                      {/* Animated shine overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[300%] transition-transform duration-1000 ease-out"></div>
+                      
+                      {/* Club initial */}
+                      <span className="text-3xl font-bold text-white relative z-10 tracking-wider">
+                        {club.name.charAt(0).toUpperCase()}
+                      </span>
+                      
+                      {/* Inner glow */}
+                      <div className="absolute inset-2 rounded-xl bg-white/10 backdrop-blur-sm"></div>
+                    </div>
+                    
+                    {/* Rotating ring effect */}
+                    <div className="absolute inset-0 w-24 h-24 mx-auto rounded-2xl border-2 border-blue-300/30 group-hover:border-blue-400/50 group-hover:rotate-180 transition-all duration-1000 ease-out"></div>
+                    
+                    {/* Outer pulsing glow */}
+                    <div className="absolute inset-0 w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-blue-400/20 to-purple-600/20 animate-pulse blur-sm"></div>
+                  </div>
+                </div>
+                
+                {/* Modern Typography */}
+                <div className="space-y-2 px-2">
+                  <h4 className="text-lg font-bold text-gray-800 leading-tight truncate group-hover:text-blue-700 transition-colors">
+                    {club.name}
+                  </h4>
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+                    <span className="text-xs text-gray-500 font-medium uppercase tracking-widest">Sports Club</span>
+                    <div className="w-1 h-1 bg-purple-400 rounded-full"></div>
+                  </div>
+                </div>
+                
+                {/* Modern floating decorations */}
+                <div className="absolute top-6 left-8 w-2 h-8 bg-gradient-to-b from-blue-400/40 to-transparent rounded-full transform rotate-12 animate-pulse"></div>
+                <div className="absolute top-8 right-8 w-2 h-6 bg-gradient-to-b from-purple-400/40 to-transparent rounded-full transform -rotate-12 animate-pulse delay-500"></div>
+                <div className="absolute bottom-8 left-6 w-1 h-4 bg-gradient-to-b from-green-400/40 to-transparent rounded-full transform rotate-45 animate-pulse delay-1000"></div>
+                <div className="absolute bottom-6 right-8 w-1.5 h-5 bg-gradient-to-b from-yellow-400/40 to-transparent rounded-full transform -rotate-45 animate-pulse delay-700"></div>
+              </div>
+            )}
+          </div>
+          
+          {/* Modern corner accents */}
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-blue-50 via-purple-50/50 to-transparent rounded-bl-3xl opacity-60"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-indigo-50 via-blue-50/50 to-transparent rounded-tr-3xl opacity-60"></div>
+          
+          {/* Subtle grid overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
         </div>
       </div>
       
-      {/* Club Info */}
-      <div style={{ padding: '16px' }}>
-        <h3 style={{
-          fontSize: '18px',
-          fontWeight: '600',
-          color: '#1f2937',
-          marginBottom: '8px',
-          lineHeight: '1.4'
-        }}>
-          {club.name}
-        </h3>
-        
-        <p style={{
-          fontSize: '14px',
-          color: '#6b7280',
-          lineHeight: '1.5',
-          marginBottom: '12px',
+      {/* Club Description and Info */}
+      <div className="p-3">
+        <p className="text-sm text-gray-600 leading-relaxed mb-2 overflow-hidden" style={{
           display: '-webkit-box',
           WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden'
+          WebkitBoxOrient: 'vertical'
         }}>
           {club.description}
         </p>
         
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginTop: '12px'
-        }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            color: '#6b7280',
-            fontSize: '14px'
-          }}>
-            <Users size={16} />
-            <span>{club.members?.length || 0} members</span>
+        {/* Stats and Status - Better Layout */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center text-sm text-gray-500">
+              <Users size={14} className="mr-1.5 text-blue-500" />
+              <span className="font-medium text-gray-700">{club.members?.length || 0}</span>
+              <span className="ml-1">members</span>
+            </div>
+            <div className="flex items-center text-sm text-gray-500">
+              <Calendar size={14} className="mr-1.5 text-green-500" />
+              <span className="font-medium text-gray-700">{new Date(club.createdAt).getFullYear()}</span>
+            </div>
           </div>
           
-          <div style={{
-            padding: '4px 8px',
-            background: club.isActive ? '#dcfce7' : '#fee2e2',
-            color: club.isActive ? '#166534' : '#dc2626',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: '500'
-          }}>
-            {club.isActive ? 'Active' : 'Inactive'}
+          <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            club.isActive 
+              ? 'bg-green-100 text-green-700 border border-green-200' 
+              : 'bg-red-100 text-red-700 border border-red-200'
+          }`}>
+            {club.isActive ? '● Active' : '● Inactive'}
           </div>
         </div>
       </div>

@@ -129,150 +129,198 @@ const ClubDetail = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-4"
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            Back
-          </button>
+  // Check if user has access to club details - only members can view full details
+  const hasAccess = !user || user.role === 'admin' || isUserMember();
+
+  if (!hasAccess) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto">
+          <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Users size={40} className="text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Join to View Details</h2>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              You need to be a member of <strong className="text-blue-600">{club.name}</strong> to access detailed information and connect with other members.
+            </p>
+            <div className="space-y-4">
+              <button
+                onClick={handleJoinClub}
+                disabled={joining}
+                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center font-medium"
+              >
+                <UserPlus size={18} className="mr-2" />
+                {joining ? 'Joining...' : `Join ${club.name}`}
+              </button>
+              <button
+                onClick={() => navigate('/user/clubs')}
+                className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+              >
+                Back to Clubs
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+    );
+  }
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Navigation Breadcrumb */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/user/clubs')}
+            className="flex items-center text-gray-600 hover:text-blue-600 transition-colors duration-200 text-sm font-medium"
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            Back to Clubs
+          </button>
+        </div>
+
         {/* Club Header */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6">
           <div className="relative">
-            {/* Club Image */}
-            <div className="h-64 bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+            {/* Club Image/Banner */}
+            <div className="h-48 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 flex items-center justify-center relative overflow-hidden">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute inset-0" style={{
+                  backgroundImage: `radial-gradient(circle at 25% 25%, white 2px, transparent 2px),
+                                   radial-gradient(circle at 75% 75%, white 2px, transparent 2px)`,
+                  backgroundSize: '50px 50px'
+                }}></div>
+              </div>
+              
               {club.image ? (
-                <img
-                  src={`http://localhost:5000${club.image}`}
-                  alt={club.name}
-                  className="w-full h-full object-cover"
-                />
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <img
+                    src={`http://localhost:5000${club.image}`}
+                    alt={club.name}
+                    className="max-h-full max-w-full object-contain"
+                    style={{ filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3))' }}
+                  />
+                </div>
               ) : (
                 <div className="text-center text-white">
-                  <Users size={64} className="mx-auto mb-4" />
-                  <h1 className="text-4xl font-bold">{club.name}</h1>
+                  <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Users size={40} />
+                  </div>
+                  <h1 className="text-2xl font-bold">{club.name}</h1>
                 </div>
               )}
             </div>
 
-            {/* Club Info Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-              <div className="text-white">
-                <h1 className="text-3xl font-bold mb-2">{club.name}</h1>
-                <div className="flex items-center space-x-4 text-sm">
-                  <span className="bg-white/20 px-3 py-1 rounded-full">{club.category}</span>
-                  <span className="flex items-center">
-                    <Users size={16} className="mr-1" />
-                    {club.members?.length || 0} members
-                  </span>
-                  <span className="flex items-center">
-                    <Calendar size={16} className="mr-1" />
-                    Created {formatDate(club.createdAt)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="p-6 border-b">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">About {club.name}</h2>
-                <p className="text-gray-600">Learn more about this club</p>
-              </div>
-              <div className="flex items-center space-x-3">
-                {/* Events Button */}
-                <button
-                  onClick={() => navigate(`/clubs/${id}/events`)}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center"
-                >
-                  <Trophy size={16} className="mr-2" />
-                  Events
-                </button>
-
-                {user && user.role !== 'admin' && (
-                  <div>
-                    {isUserMember() ? (
-                      <button
-                        onClick={handleLeaveClub}
-                        disabled={joining}
-                        className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center"
-                      >
-                        <UserMinus size={16} className="mr-2" />
-                        {joining ? 'Leaving...' : 'Leave Club'}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleJoinClub}
-                        disabled={joining}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
-                      >
-                        <UserPlus size={16} className="mr-2" />
-                        {joining ? 'Joining...' : 'Join Club'}
-                      </button>
-                    )}
+            {/* Club Info */}
+            <div className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">{club.name}</h1>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      {club.category}
+                    </span>
+                    <span className="flex items-center">
+                      <Users size={16} className="mr-1 text-blue-600" />
+                      {club.members?.length || 0} members
+                    </span>
+                    <span className="flex items-center">
+                      <Calendar size={16} className="mr-1 text-green-600" />
+                      Created {formatDate(club.createdAt)}
+                    </span>
                   </div>
-                )}
+                  <p className="text-gray-700 leading-relaxed">{club.description}</p>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-3 ml-6">
+                  <button
+                    onClick={() => navigate(`/clubs/${id}/events`)}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center text-sm font-medium"
+                  >
+                    <Trophy size={16} className="mr-2" />
+                    Events
+                  </button>
+
+                  {user && user.role !== 'admin' && (
+                    <div>
+                      {isUserMember() ? (
+                        <button
+                          onClick={handleLeaveClub}
+                          disabled={joining}
+                          className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center text-sm font-medium"
+                        >
+                          <UserMinus size={16} className="mr-2" />
+                          {joining ? 'Leaving...' : 'Leave Club'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleJoinClub}
+                          disabled={joining}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center text-sm font-medium"
+                        >
+                          <UserPlus size={16} className="mr-2" />
+                          {joining ? 'Joining...' : 'Join Club'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Description */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Description</h3>
-              <p className="text-gray-700 leading-relaxed">{club.description}</p>
-            </div>
-
-            {/* Requirements */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Requirements Section */}
             {club.requirements && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Membership Requirements</h3>
-                <p className="text-gray-700 leading-relaxed">{club.requirements}</p>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Star size={20} className="mr-2 text-yellow-500" />
+                  Membership Requirements
+                </h3>
+                <p className="text-gray-700 leading-relaxed bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+                  {club.requirements}
+                </p>
               </div>
             )}
 
-            {/* Recent Members */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Members</h3>
-              <div className="space-y-3">
-                {club.members?.slice(0, 5).map((member, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-medium">
-                        {member.user.firstName.charAt(0)}{member.user.lastName.charAt(0)}
-                      </span>
+            {/* Members Section */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+                <Users size={20} className="mr-2 text-blue-600" />
+                Club Members ({club.members?.length || 0})
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {club.members?.map((member, index) => (
+                  <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+                      {member.user.firstName.charAt(0)}{member.user.lastName.charAt(0)}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">
                         {member.user.firstName} {member.user.lastName}
                       </p>
                       <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        <span>{getRoleDisplayName(member.role)}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          member.role === 'club_head' 
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : member.role === 'moderator'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {getRoleDisplayName(member.role)}
+                        </span>
                         {member.user.rollNo && (
-                          <>
-                            <span>•</span>
-                            <span>{member.user.rollNo}</span>
-                          </>
+                          <span className="text-gray-400">•</span>
                         )}
-                        {member.user.department && (
-                          <>
-                            <span>•</span>
-                            <span>{member.user.department}</span>
-                          </>
+                        {member.user.rollNo && (
+                          <span>{member.user.rollNo}</span>
                         )}
                       </div>
                       <p className="text-xs text-gray-400">
@@ -281,61 +329,62 @@ const ClubDetail = () => {
                     </div>
                   </div>
                 ))}
-                {club.members?.length > 5 && (
-                  <p className="text-sm text-gray-500 mt-3">
-                    And {club.members.length - 5} more members...
-                  </p>
-                )}
               </div>
             </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Club Stats */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Club Information</h3>
+            {/* Club Information */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Trophy size={20} className="mr-2 text-purple-600" />
+                Club Information
+              </h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Category</span>
-                  <span className="font-medium">{club.category}</span>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Category</span>
+                  <span className="text-gray-900 font-semibold">{club.category}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Total Members</span>
-                  <span className="font-medium">{club.members?.length || 0}</span>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Total Members</span>
+                  <span className="text-gray-900 font-semibold">{club.members?.length || 0}</span>
                 </div>
                 {club.maxMembers && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Max Members</span>
-                    <span className="font-medium">{club.maxMembers}</span>
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <span className="text-gray-600 font-medium">Max Members</span>
+                    <span className="text-gray-900 font-semibold">{club.maxMembers}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Status</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600 font-medium">Status</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                     club.isActive 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
+                      ? 'bg-green-100 text-green-700 border border-green-200' 
+                      : 'bg-red-100 text-red-700 border border-red-200'
                   }`}>
-                    {club.isActive ? 'Active' : 'Inactive'}
+                    {club.isActive ? '● Active' : '● Inactive'}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Created</span>
-                  <span className="font-medium">{formatDate(club.createdAt)}</span>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-gray-600 font-medium">Created</span>
+                  <span className="text-gray-900 font-semibold">{formatDate(club.createdAt)}</span>
                 </div>
               </div>
             </div>
 
             {/* Contact Information */}
             {club.contactEmail && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact</h3>
-                <div className="flex items-center space-x-3">
-                  <Mail size={20} className="text-gray-400" />
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <Mail size={20} className="mr-2 text-green-600" />
+                  Contact
+                </h3>
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <Mail size={16} className="text-gray-400" />
                   <a
                     href={`mailto:${club.contactEmail}`}
-                    className="text-blue-600 hover:text-blue-700 transition-colors"
+                    className="text-blue-600 hover:text-blue-700 transition-colors font-medium"
                   >
                     {club.contactEmail}
                   </a>
