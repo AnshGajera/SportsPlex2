@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
 import { Package, Clock, CheckCircle, XCircle } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import api from '../services/api';
@@ -18,25 +21,22 @@ const UserEquipment = () => {
 
   const handleSubmitRequest = async () => {
     try {
-      if (!requestDuration.trim()) {
-        alert('Please enter duration');
+      if (!requestEquipment?.startTime || !requestEquipment?.endTime) {
+        alert('Please select both start and end time');
         return;
       }
-      
       await api.post('/equipment/request', {
         equipmentId: requestEquipment._id,
-        duration: requestDuration,
+        startTime: requestEquipment.startTime,
+        endTime: requestEquipment.endTime,
         quantityRequested: requestQuantity,
         purpose: requestPurpose
       });
-      
       setRequestModalOpen(false);
       setRequestEquipment(null);
-      setRequestDuration('');
       setRequestPurpose('');
       setRequestQuantity(1);
       alert('Request sent to admin successfully!');
-      
       // Refresh data
       fetchEquipment();
       fetchMyRequests();
@@ -428,17 +428,34 @@ const UserEquipment = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Duration *
-                </label>
-                <input
-                  type="text"
-                  value={requestDuration}
-                  onChange={(e) => setRequestDuration(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  placeholder="Enter duration (e.g. 2 hours, 1 day, 1 week)"
-                  required
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <TimePicker
+                    ampm={false}
+                    views={["hours", "minutes"]}
+                    format="HH:mm"
+                    value={requestEquipment?.startTime ? dayjs(requestEquipment.startTime, "HH:mm") : null}
+                    onChange={value => {
+                      setRequestEquipment(e => ({ ...e, startTime: value ? value.format("HH:mm") : "" }));
+                    }}
+                    slotProps={{ textField: { fullWidth: true, variant: "outlined" } }}
+                  />
+                </LocalizationProvider>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <TimePicker
+                    ampm={false}
+                    views={["hours", "minutes"]}
+                    format="HH:mm"
+                    value={requestEquipment?.endTime ? dayjs(requestEquipment.endTime, "HH:mm") : null}
+                    onChange={value => {
+                      setRequestEquipment(e => ({ ...e, endTime: value ? value.format("HH:mm") : "" }));
+                    }}
+                    slotProps={{ textField: { fullWidth: true, variant: "outlined" } }}
+                  />
+                </LocalizationProvider>
               </div>
               
               <div>

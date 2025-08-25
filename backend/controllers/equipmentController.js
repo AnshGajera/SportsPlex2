@@ -6,10 +6,8 @@ exports.getAllEquipment = async (req, res) => {
     // Check if user is admin by looking at the user object from middleware
     const isUserAdmin = req.user && req.user.role === 'admin';
     
-    // If admin, show all equipment; if regular user, show only active equipment
-    const query = isUserAdmin ? {} : { isActive: true };
-    
-    const equipment = await Equipment.find(query);
+  // Show all equipment to both admin and regular users
+  const equipment = await Equipment.find({});
     res.json(equipment);
   } catch (err) {
     console.error('Get equipment error:', err);

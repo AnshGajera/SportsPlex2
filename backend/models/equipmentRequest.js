@@ -17,7 +17,11 @@ const equipmentRequestSchema = new mongoose.Schema({
     default: 1,
     min: 1
   },
-  duration: {
+  startTime: {
+    type: String,
+    required: true
+  },
+  endTime: {
     type: String,
     required: true
   },
