@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { Package, Clock, CheckCircle, XCircle } from 'lucide-react';
@@ -430,10 +431,10 @@ const UserEquipment = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Return By (Date & Time) *</label>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <TimePicker
-                    label="Return Time"
+                  <DateTimePicker
+                    label="Return Date & Time"
                     value={expectedReturnDate ? dayjs(expectedReturnDate) : null}
-                    onChange={newValue => setExpectedReturnDate(newValue ? newValue.toISOString() : null)}
+                    onChange={newValue => setExpectedReturnDate(newValue ? newValue.toDate().toISOString() : null)}
                     renderInput={(params) => <input {...params} />}
                   />
                 </LocalizationProvider>
