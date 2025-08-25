@@ -15,17 +15,25 @@ const EditClubModal = ({ isOpen, onClose, club, onClubUpdated }) => {
   
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
-  const [logoSize, setLogoSize] = useState({ width: 200, height: 200 });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   
   const fileInputRef = useRef(null);
-  const canvasRef = useRef(null);
 
-  // Categories for club selection
+  // Categories for club selection - matching AddClubModal
   const categories = [
-    'Sports', 'Cultural', 'Technical', 'Academic', 'Social Service', 
-    'Arts', 'Music', 'Dance', 'Drama', 'Literature', 'Other'
+    'Basketball',
+    'Football',
+    'Tennis',
+    'Cricket',
+    'Badminton',
+    'Table Tennis',
+    'Volleyball',
+    'Swimming',
+    'Athletics',
+    'Fitness',
+    'Martial Arts',
+    'Other'
   ];
 
   useEffect(() => {
@@ -91,41 +99,13 @@ const EditClubModal = ({ isOpen, onClose, club, onClubUpdated }) => {
     }
   };
 
-  const resizeImage = (file, maxWidth, maxHeight) => {
-    return new Promise((resolve) => {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      img.onload = () => {
-        // Calculate new dimensions while maintaining aspect ratio
-        let { width, height } = img;
-        
-        if (width > height) {
-          if (width > maxWidth) {
-            height = (height * maxWidth) / width;
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = (width * maxHeight) / height;
-            height = maxHeight;
-          }
-        }
-        
-        // Set canvas dimensions
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw and compress image
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob(resolve, 'image/jpeg', 0.8);
-      };
-      
-      img.src = URL.createObjectURL(file);
-    });
-  };
+  // No longer needed since we're uploading original images
+  // const resizeImage = (file, maxWidth, maxHeight) => {
+  //   return new Promise((resolve) => {
+  //     // Just return the original file without resizing
+  //     resolve(file);
+  //   });
+  // };
 
   const validateForm = () => {
     const newErrors = {};
@@ -157,7 +137,12 @@ const EditClubModal = ({ isOpen, onClose, club, onClubUpdated }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('=== EditClubModal Submit Debug ===');
+    console.log('Club ID:', club._id);
+    console.log('Form Data:', formData);
+    
     if (!validateForm()) {
+      console.log('Form validation failed');
       return;
     }
     
@@ -168,24 +153,34 @@ const EditClubModal = ({ isOpen, onClose, club, onClubUpdated }) => {
       
       // Add form fields
       Object.keys(formData).forEach(key => {
-        if (formData[key] !== '') {
-          submitData.append(key, formData[key]);
-        }
+        // Always send all fields, including empty ones for optional fields
+        submitData.append(key, formData[key]);
+        console.log(`Adding to FormData: ${key} = ${formData[key]}`);
       });
       
-      // Add resized image if selected
+      // Add original image if selected (no resizing)
       if (imageFile) {
-        const resizedImage = await resizeImage(imageFile, logoSize.width, logoSize.height);
-        submitData.append('image', resizedImage, 'club-logo.jpg');
+        console.log('Adding original image file to FormData');
+        submitData.append('image', imageFile);
       }
       
+      console.log('Making API call to:', `/clubs/${club._id}`);
       const response = await api.put(`/clubs/${club._id}`, submitData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      onClubUpdated(response.data);
+      console.log('API Response:', response.data);
+      
+      // Backend returns { message, club }, so we need to pass the club object
+      if (response.data.club) {
+        console.log('Calling onClubUpdated with:', response.data.club);
+        onClubUpdated(response.data.club);
+      } else {
+        console.log('No club object in response, using full response data');
+        onClubUpdated(response.data);
+      }
       onClose();
       
     } catch (error) {
@@ -268,38 +263,8 @@ const EditClubModal = ({ isOpen, onClose, club, onClubUpdated }) => {
                     </button>
                   )}
                   <p className="text-sm text-gray-500 mt-1">
-                    Max size: 5MB. Recommended: Square format (1:1 ratio)
+                    Max size: 5MB. Recommended: Square format for best appearance
                   </p>
-                </div>
-              </div>
-
-              {/* Logo Size Controls */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Logo Width (px)
-                  </label>
-                  <input
-                    type="number"
-                    min="50"
-                    max="500"
-                    value={logoSize.width}
-                    onChange={(e) => setLogoSize(prev => ({ ...prev, width: parseInt(e.target.value) || 200 }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Logo Height (px)
-                  </label>
-                  <input
-                    type="number"
-                    min="50"
-                    max="500"
-                    value={logoSize.height}
-                    onChange={(e) => setLogoSize(prev => ({ ...prev, height: parseInt(e.target.value) || 200 }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  />
                 </div>
               </div>
 
@@ -448,9 +413,6 @@ const EditClubModal = ({ isOpen, onClose, club, onClubUpdated }) => {
               Club is active and accepting new members
             </label>
           </div>
-
-          {/* Hidden canvas for image resizing */}
-          <canvas ref={canvasRef} style={{ display: 'none' }} />
 
           {/* Submit Buttons */}
           <div className="flex space-x-3 pt-4">
