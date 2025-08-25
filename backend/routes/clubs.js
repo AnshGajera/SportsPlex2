@@ -199,11 +199,28 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
 // PUT /api/clubs/:id - Update club (requires authentication and proper permissions)
 router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
   try {
+    console.log('=== Club Update API Debug ===');
+    console.log('Club ID:', req.params.id);
+    console.log('Request Body:', req.body);
+    console.log('File uploaded:', req.file ? req.file.filename : 'No file');
+    console.log('User:', req.user._id, req.user.role);
+    
     const club = await Club.findById(req.params.id);
     
     if (!club) {
+      console.log('Club not found');
       return res.status(404).json({ message: 'Club not found' });
     }
+    
+    console.log('Original club data:', {
+      name: club.name,
+      description: club.description,
+      category: club.category,
+      contactEmail: club.contactEmail,
+      maxMembers: club.maxMembers,
+      requirements: club.requirements,
+      isActive: club.isActive
+    });
     
     // Check permissions (club creator, admin, or club head)
     const isCreator = club.createdBy.toString() === req.user._id.toString();
@@ -216,7 +233,7 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
       return res.status(403).json({ message: 'Permission denied' });
     }
     
-    const { name, description, category, isActive } = req.body;
+    const { name, description, category, isActive, contactEmail, maxMembers, requirements } = req.body;
     
     // Check if new name conflicts with existing clubs
     if (name && name !== club.name) {
@@ -235,8 +252,30 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     if (category) club.category = category.trim();
     if (typeof isActive !== 'undefined') club.isActive = isActive;
     
+    // Update optional fields - handle both undefined and empty string cases
+    if (contactEmail !== undefined) {
+      club.contactEmail = contactEmail && contactEmail.trim() ? contactEmail.trim() : null;
+    }
+    if (maxMembers !== undefined) {
+      club.maxMembers = maxMembers && maxMembers.toString().trim() ? parseInt(maxMembers) : null;
+    }
+    if (requirements !== undefined) {
+      club.requirements = requirements && requirements.trim() ? requirements.trim() : null;
+    }
+    
+    console.log('Updated club data before save:', {
+      name: club.name,
+      description: club.description,
+      category: club.category,
+      contactEmail: club.contactEmail,
+      maxMembers: club.maxMembers,
+      requirements: club.requirements,
+      isActive: club.isActive
+    });
+    
     // Update image if new one uploaded
     if (req.file) {
+      console.log('Updating club image to:', `/uploads/clubs/${req.file.filename}`);
       // Delete old image if exists
       if (club.image) {
         const oldImagePath = path.join(__dirname, '..', club.image);
@@ -248,11 +287,13 @@ router.put('/:id', authMiddleware, upload.single('image'), async (req, res) => {
     }
     
     await club.save();
+    console.log('Club saved successfully');
     
     // Populate for response
     await club.populate('createdBy', 'firstName lastName email');
     await club.populate('members.user', 'firstName lastName email');
     
+    console.log('Sending response with updated club');
     res.json({ message: 'Club updated successfully', club });
   } catch (error) {
     console.error('Error updating club:', error);
