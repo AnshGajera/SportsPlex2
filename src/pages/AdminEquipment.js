@@ -1,9 +1,93 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search, Filter, Package, Clock, CheckCircle, XCircle, Plus, Users, AlertTriangle } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import AddEquipmentModal from '../components/Modals/AddEquipmentModal';
 import api from '../services/api';
+
+// Timer card for each allocation
+function AllocationCard({ allocation }) {
+  const [timeLeft, setTimeLeft] = useState(null);
+  useEffect(() => {
+    if (!allocation.expectedReturnDate) {
+      setTimeLeft('Unknown');
+      return;
+    }
+    const endTime = new Date(allocation.expectedReturnDate);
+    const updateTimer = () => {
+      const now = new Date();
+      const diff = endTime - now;
+      if (diff <= 0) {
+        setTimeLeft('Expired');
+        return;
+      }
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+    };
+    updateTimer();
+    const timerId = setInterval(updateTimer, 1000);
+    return () => clearInterval(timerId);
+  }, [allocation.expectedReturnDate]);
+  const isOverdue = timeLeft === 'Expired';
+  return (
+    <div className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>
+            {allocation.equipment?.name}
+          </h3>
+          <p style={{ color: '#64748b', marginBottom: '4px' }}>
+            Allocated to: {allocation.allocatedTo?.firstName} {allocation.allocatedTo?.lastName}
+          </p>
+          <p style={{ color: '#64748b', marginBottom: '4px' }}>
+            Email: {allocation.allocatedTo?.email}
+          </p>
+          <p style={{ color: '#64748b', marginBottom: '4px' }}>
+            Quantity: {allocation.quantityAllocated}
+          </p>
+          <p style={{ color: '#64748b', marginBottom: '4px' }}>
+            Allocated on: {new Date(allocation.allocationDate).toLocaleDateString()}
+          </p>
+          <p style={{ color: isOverdue ? '#dc2626' : '#64748b', marginBottom: '8px', fontWeight: isOverdue ? '600' : 'normal' }}>
+            Time left: {timeLeft}
+            {isOverdue && ' (OVERDUE)'}
+          </p>
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '4px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '500',
+              backgroundColor: isOverdue ? '#fee2e2' : '#dbeafe',
+              color: isOverdue ? '#dc2626' : '#1e40af',
+              marginBottom: '8px'
+            }}
+          >
+            {isOverdue ? 'Overdue' : 'Active'}
+          </span>
+        </div>
+        {allocation.equipment?.image && (
+          <img 
+            src={`http://localhost:5000${allocation.equipment.image}`} 
+            alt={allocation.equipment.name} 
+            style={{ 
+              width: '120px', 
+              height: '90px', 
+              borderRadius: '8px', 
+              marginLeft: '16px', 
+              objectFit: 'cover' 
+            }} 
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 const AdminEquipment = () => {
   const location = useLocation();
@@ -67,7 +151,7 @@ const AdminEquipment = () => {
   const fetchRequests = async () => {
     try {
       const response = await api.get('/equipment/requests');
-      setRequests(response.data.requests || response.data);
+  setRequests(response.data);
     } catch (error) {
       console.error('Error fetching requests:', error);
     }
@@ -608,7 +692,7 @@ const AdminEquipment = () => {
                         Quantity: {request.quantityRequested}
                       </p>
                       <p style={{ color: '#64748b', marginBottom: '4px' }}>
-                        Duration: {request.duration}
+                        Duration: {request.duration?.hours || 0} hours {request.duration?.minutes || 0} min
                       </p>
                       {request.purpose && (
                         <p style={{ color: '#64748b', marginBottom: '4px' }}>
@@ -655,10 +739,7 @@ const AdminEquipment = () => {
                             className="btn btn-secondary"
                             style={{ backgroundColor: '#10b981', color: 'white' }}
                             onClick={() => {
-                              const returnDate = prompt('Enter expected return date (YYYY-MM-DD):');
-                              if (returnDate) {
-                                handleApproveRequest(request._id, returnDate);
-                              }
+                              handleApproveRequest(request._id);
                             }}
                           >
                             Approve
@@ -675,21 +756,7 @@ const AdminEquipment = () => {
                         </div>
                       )}
 
-                      {request.status === 'approved' && (
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                          <button 
-                            className="btn btn-primary"
-                            onClick={() => {
-                              const returnDate = request.expectedReturnDate || prompt('Enter expected return date (YYYY-MM-DD):');
-                              if (returnDate) {
-                                handleAllocateEquipment(request._id, returnDate);
-                              }
-                            }}
-                          >
-                            Allocate Equipment
-                          </button>
-                        </div>
-                      )}
+                      {/* Allocation step removed. Approval means allocation. */}
 
                       {request.adminNotes && (
                         <p style={{ color: '#64748b', marginTop: '8px', fontStyle: 'italic' }}>
@@ -733,68 +800,9 @@ const AdminEquipment = () => {
             </div>
           ) : (
             <div className="grid grid-1">
-              {allocations.filter(a => a.status === 'allocated').map((allocation, index) => {
-                const isOverdue = new Date() > new Date(allocation.expectedReturnDate);
-                return (
-                  <div key={index} className="card">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '8px' }}>
-                          {allocation.equipment?.name}
-                        </h3>
-                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
-                          Allocated to: {allocation.allocatedTo?.firstName} {allocation.allocatedTo?.lastName}
-                        </p>
-                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
-                          Email: {allocation.allocatedTo?.email}
-                        </p>
-                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
-                          Quantity: {allocation.quantityAllocated}
-                        </p>
-                        <p style={{ color: '#64748b', marginBottom: '4px' }}>
-                          Allocated on: {new Date(allocation.allocationDate).toLocaleDateString()}
-                        </p>
-                        <p style={{ 
-                          color: isOverdue ? '#dc2626' : '#64748b', 
-                          marginBottom: '8px',
-                          fontWeight: isOverdue ? '600' : 'normal'
-                        }}>
-                          Expected return: {new Date(allocation.expectedReturnDate).toLocaleDateString()}
-                          {isOverdue && ' (OVERDUE)'}
-                        </p>
-                        
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '4px 12px',
-                            borderRadius: '20px',
-                            fontSize: '12px',
-                            fontWeight: '500',
-                            backgroundColor: isOverdue ? '#fee2e2' : '#dbeafe',
-                            color: isOverdue ? '#dc2626' : '#1e40af',
-                            marginBottom: '8px'
-                          }}
-                        >
-                          {isOverdue ? 'Overdue' : 'Active'}
-                        </span>
-                      </div>
-                      {allocation.equipment?.image && (
-                        <img 
-                          src={`http://localhost:5000${allocation.equipment.image}`} 
-                          alt={allocation.equipment.name} 
-                          style={{ 
-                            width: '120px', 
-                            height: '90px', 
-                            borderRadius: '8px', 
-                            marginLeft: '16px', 
-                            objectFit: 'cover' 
-                          }} 
-                        />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {allocations.filter(a => a.status === 'allocated').map((allocation, index) => (
+                <AllocationCard key={index} allocation={allocation} />
+              ))}
             </div>
           )}
         </div>

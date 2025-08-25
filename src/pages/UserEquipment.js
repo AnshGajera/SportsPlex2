@@ -10,7 +10,7 @@ const UserEquipment = () => {
   // Request modal state
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestEquipment, setRequestEquipment] = useState(null);
-  const [requestDuration, setRequestDuration] = useState('');
+  const [expectedReturnDate, setExpectedReturnDate] = useState(null);
   const [requestPurpose, setRequestPurpose] = useState('');
   const [requestQuantity, setRequestQuantity] = useState(1);
 
@@ -21,14 +21,13 @@ const UserEquipment = () => {
 
   const handleSubmitRequest = async () => {
     try {
-      if (!requestEquipment?.startTime || !requestEquipment?.endTime) {
-        alert('Please select both start and end time');
+      if (!expectedReturnDate) {
+        alert('Please select a return date and time');
         return;
       }
       await api.post('/equipment/request', {
         equipmentId: requestEquipment._id,
-        startTime: requestEquipment.startTime,
-        endTime: requestEquipment.endTime,
+        expectedReturnDate,
         quantityRequested: requestQuantity,
         purpose: requestPurpose
       });
@@ -36,6 +35,7 @@ const UserEquipment = () => {
       setRequestEquipment(null);
       setRequestPurpose('');
       setRequestQuantity(1);
+      setExpectedReturnDate(null);
       alert('Request sent to admin successfully!');
       // Refresh data
       fetchEquipment();
@@ -428,32 +428,13 @@ const UserEquipment = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Return By (Date & Time) *</label>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <TimePicker
-                    ampm={false}
-                    views={["hours", "minutes"]}
-                    format="HH:mm"
-                    value={requestEquipment?.startTime ? dayjs(requestEquipment.startTime, "HH:mm") : null}
-                    onChange={value => {
-                      setRequestEquipment(e => ({ ...e, startTime: value ? value.format("HH:mm") : "" }));
-                    }}
-                    slotProps={{ textField: { fullWidth: true, variant: "outlined" } }}
-                  />
-                </LocalizationProvider>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <TimePicker
-                    ampm={false}
-                    views={["hours", "minutes"]}
-                    format="HH:mm"
-                    value={requestEquipment?.endTime ? dayjs(requestEquipment.endTime, "HH:mm") : null}
-                    onChange={value => {
-                      setRequestEquipment(e => ({ ...e, endTime: value ? value.format("HH:mm") : "" }));
-                    }}
-                    slotProps={{ textField: { fullWidth: true, variant: "outlined" } }}
+                    label="Return Time"
+                    value={expectedReturnDate ? dayjs(expectedReturnDate) : null}
+                    onChange={newValue => setExpectedReturnDate(newValue ? newValue.toISOString() : null)}
+                    renderInput={(params) => <input {...params} />}
                   />
                 </LocalizationProvider>
               </div>
@@ -476,9 +457,9 @@ const UserEquipment = () => {
                 className="px-6 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
                 onClick={() => {
                   setRequestModalOpen(false);
-                  setRequestDuration('');
                   setRequestPurpose('');
                   setRequestQuantity(1);
+                  setExpectedReturnDate(null);
                 }}
               >
                 Cancel
@@ -486,7 +467,7 @@ const UserEquipment = () => {
               <button
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 onClick={handleSubmitRequest}
-                disabled={!requestDuration.trim()}
+                disabled={!expectedReturnDate}
               >
                 Send Request
               </button>
@@ -546,7 +527,7 @@ const UserEquipment = () => {
                         Quantity: {request.quantityRequested}
                       </p>
                       <p style={{ color: '#64748b', marginBottom: '4px' }}>
-                        Duration: {request.duration}
+                        Duration: {request.duration?.hours || 0} hours {request.duration?.minutes || 0} min
                       </p>
                       {request.purpose && (
                         <p style={{ color: '#64748b', marginBottom: '4px' }}>
@@ -668,7 +649,7 @@ const UserEquipment = () => {
                           marginBottom: '8px',
                           fontWeight: isOverdue ? '600' : 'normal'
                         }}>
-                          Return by: {new Date(allocation.expectedReturnDate).toLocaleDateString()}
+                          Return by: {new Date(allocation.expectedReturnDate).toLocaleString()}
                           {isOverdue && ' (OVERDUE)'}
                         </p>
                         <span
