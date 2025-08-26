@@ -82,52 +82,44 @@ router.delete('/:id', protect, isAdmin, equipmentController.deleteEquipment);
 // Submit equipment request (authenticated users)
 router.post('/request', protect, async (req, res) => {
   try {
-    const { equipmentId, duration, quantityRequested = 1, purpose } = req.body;
-    
+    const { equipmentId, startTime, endTime, quantityRequested = 1, purpose } = req.body;
     // Check if equipment exists and has sufficient quantity
     const equipment = await Equipment.findById(equipmentId);
     if (!equipment) {
       return res.status(404).json({ error: 'Equipment not found' });
     }
-    
     if (!equipment.isActive) {
       return res.status(400).json({ error: 'Equipment is not available for requests' });
     }
-    
     if (equipment.availableQuantity < quantityRequested) {
       return res.status(400).json({ 
         error: `Insufficient quantity available. Only ${equipment.availableQuantity} units available.` 
       });
     }
-    
     // Check if user already has a pending request for this equipment
     const existingRequest = await EquipmentRequest.findOne({
       equipment: equipmentId,
       requester: req.user._id,
       status: 'pending'
     });
-    
     if (existingRequest) {
       return res.status(400).json({ 
         error: 'You already have a pending request for this equipment' 
       });
     }
-    
     const newRequest = new EquipmentRequest({
       equipment: equipmentId,
       requester: req.user._id,
       quantityRequested,
-      duration,
+      startTime,
+      endTime,
       purpose
     });
-    
     await newRequest.save();
-    
     // Populate the request for response
     const populatedRequest = await EquipmentRequest.findById(newRequest._id)
       .populate('equipment', 'name category')
       .populate('requester', 'firstName lastName email');
-    
     res.status(201).json({ 
       message: 'Request submitted successfully',
       request: populatedRequest
