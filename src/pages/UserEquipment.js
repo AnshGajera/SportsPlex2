@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Clock, CheckCircle, XCircle, Calendar, Users, Camera, AlertTriangle } from 'lucide-react';
+import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import { Package, Clock, CheckCircle, XCircle } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import api from '../services/api';
 
@@ -397,13 +401,14 @@ const UserEquipment = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Return By (Date & Time) *</label>
-                <input
-                  type="datetime-local"
-                  value={expectedReturnDate}
-                  onChange={(e) => setExpectedReturnDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  required
-                />
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DateTimePicker
+                    label="Return Date & Time"
+                    value={expectedReturnDate ? dayjs(expectedReturnDate) : null}
+                    onChange={newValue => setExpectedReturnDate(newValue ? newValue.toDate().toISOString() : null)}
+                    renderInput={(params) => <input {...params} />}
+                  />
+                </LocalizationProvider>
               </div>
               
               <div>
