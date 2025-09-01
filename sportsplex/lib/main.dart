@@ -8,6 +8,8 @@ import 'StudentEquipment.dart';
 import 'StudentClubs.dart';
 import 'StudentMatches.dart';
 import 'AdminAnnouncements.dart';
+import 'AdminEquipment.dart';
+import 'StudentProfile.dart';
 
 void main() {
   runApp(SportsPlexApp());
@@ -60,6 +62,13 @@ class SportsPlexApp extends StatelessWidget {
           return StudentMatches(userId: args?['userId'] ?? '');
         },
         '/announcements': (context) => AdminAnnouncements(),
+        '/admin-equipment': (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>?;
+          return AdminEquipment(token: args?['token']);
+        },
+        '/student-profile': (context) => StudentProfile(),
       },
     );
   }

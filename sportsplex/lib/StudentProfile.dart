@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:ultimate_flutter_icons/ultimate_flutter_icons.dart';
-import 'package:ultimate_flutter_icons/icons/md.dart';
-import 'package:ultimate_flutter_icons/icons/fa.dart';
-import 'package:ultimate_flutter_icons/icons/bs.dart';
-import 'package:ultimate_flutter_icons/icons/io.dart';
 
 class StudentProfile extends StatefulWidget {
   @override
@@ -70,7 +65,9 @@ class _StudentProfileState extends State<StudentProfile> {
   }
 
   void handleProfileUpdate() async {
-    setState(() { loading = true; });
+    setState(() {
+      loading = true;
+    });
     // TODO: Send update to backend
     await Future.delayed(Duration(seconds: 1));
     setState(() {
@@ -83,10 +80,15 @@ class _StudentProfileState extends State<StudentProfile> {
 
   void handleCertificateUpload() async {
     if (certificateData['title'] == '' || certificateData['file'] == null) {
-      showNotification('Please provide a title and select a file', type: 'error');
+      showNotification(
+        'Please provide a title and select a file',
+        type: 'error',
+      );
       return;
     }
-    setState(() { uploadingCertificate = true; });
+    setState(() {
+      uploadingCertificate = true;
+    });
     // TODO: Upload certificate to backend
     await Future.delayed(Duration(seconds: 1));
     setState(() {
@@ -118,7 +120,10 @@ class _StudentProfileState extends State<StudentProfile> {
             backgroundColor: Colors.blue[100],
             child: Text(
               '${displayData['firstName'][0]}${displayData['lastName'][0]}',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue[700]),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.blue[700],
+              ),
             ),
           ),
           SizedBox(width: 16),
@@ -136,25 +141,34 @@ class _StudentProfileState extends State<StudentProfile> {
                   margin: EdgeInsets.only(bottom: 16),
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: notificationType == 'success' ? Colors.green[400] : Colors.red[400],
+                    color: notificationType == 'success'
+                        ? Colors.green[400]
+                        : Colors.red[400],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         notificationType == 'success'
-                          ? MdIcons.check_circle_outline
-                          : MdIcons.close_circle_outline,
+                            ? Icons.check_circle
+                            : Icons.cancel,
                         color: Colors.white,
                       ),
                       SizedBox(width: 8),
-                      Expanded(child: Text(notification, style: TextStyle(color: Colors.white))),
+                      Expanded(
+                        child: Text(
+                          notification,
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               Card(
                 elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -167,7 +181,11 @@ class _StudentProfileState extends State<StudentProfile> {
                             backgroundColor: Colors.blue[100],
                             child: Text(
                               '${displayData['firstName'][0]}${displayData['lastName'][0]}',
-                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue[700]),
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[700],
+                              ),
                             ),
                           ),
                           SizedBox(width: 16),
@@ -176,29 +194,44 @@ class _StudentProfileState extends State<StudentProfile> {
                             children: [
                               Text(
                                 '${displayData['firstName']} ${displayData['lastName']}',
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              Text(displayData['email'], style: TextStyle(color: Colors.grey[700])),
+                              Text(
+                                displayData['email'],
+                                style: TextStyle(color: Colors.grey[700]),
+                              ),
                               Container(
                                 margin: EdgeInsets.only(top: 4),
-                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.blue[100],
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   displayData['role'].toString().toUpperCase(),
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue[800]),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue[800],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                           Spacer(),
                           ElevatedButton.icon(
-                            icon: Icon(isEditing ? MdIcons.close : MdIcons.pencil),
+                            icon: Icon(isEditing ? Icons.close : Icons.edit),
                             label: Text(isEditing ? 'Cancel' : 'Edit Profile'),
                             onPressed: () {
-                              setState(() { isEditing = !isEditing; });
+                              setState(() {
+                                isEditing = !isEditing;
+                              });
                             },
                           ),
                         ],
@@ -210,7 +243,10 @@ class _StudentProfileState extends State<StudentProfile> {
                 ),
               ),
               SizedBox(height: 24),
-              Text('Certificates', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                'Certificates',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               SizedBox(height: 8),
               _buildCertificateUploadForm(),
               SizedBox(height: 16),
@@ -220,11 +256,11 @@ class _StudentProfileState extends State<StudentProfile> {
                 return Card(
                   margin: EdgeInsets.symmetric(vertical: 6),
                   child: ListTile(
-                    leading: Icon(FaIcons.certificate, color: Colors.blue),
+                    leading: Icon(Icons.workspace_premium, color: Colors.blue),
                     title: Text(cert['title'] ?? ''),
                     subtitle: Text(cert['description'] ?? ''),
                     trailing: IconButton(
-                      icon: Icon(MdIcons.delete_outline, color: Colors.red),
+                      icon: Icon(Icons.delete, color: Colors.red),
                       onPressed: () => handleDeleteCertificate(idx),
                     ),
                   ),
@@ -266,12 +302,12 @@ class _StudentProfileState extends State<StudentProfile> {
         _editField('Department', 'department'),
         SizedBox(height: 12),
         loading
-          ? CircularProgressIndicator()
-          : ElevatedButton.icon(
-              icon: Icon(MdIcons.content_save),
-              label: Text('Save Changes'),
-              onPressed: handleProfileUpdate,
-            ),
+            ? CircularProgressIndicator()
+            : ElevatedButton.icon(
+                icon: Icon(Icons.save),
+                label: Text('Save Changes'),
+                onPressed: handleProfileUpdate,
+              ),
       ],
     );
   }
@@ -286,7 +322,9 @@ class _StudentProfileState extends State<StudentProfile> {
           border: OutlineInputBorder(),
         ),
         onChanged: (val) {
-          setState(() { formData[key] = val; });
+          setState(() {
+            formData[key] = val;
+          });
         },
       ),
     );
@@ -298,7 +336,9 @@ class _StudentProfileState extends State<StudentProfile> {
       child: Row(
         children: [
           Text('$label: ', style: TextStyle(fontWeight: FontWeight.bold)),
-          Expanded(child: Text(value, style: TextStyle(color: Colors.grey[800]))),
+          Expanded(
+            child: Text(value, style: TextStyle(color: Colors.grey[800])),
+          ),
         ],
       ),
     );
@@ -315,7 +355,9 @@ class _StudentProfileState extends State<StudentProfile> {
             TextFormField(
               decoration: InputDecoration(labelText: 'Title'),
               onChanged: (val) {
-                setState(() { certificateData['title'] = val; });
+                setState(() {
+                  certificateData['title'] = val;
+                });
               },
               initialValue: certificateData['title'],
             ),
@@ -323,7 +365,9 @@ class _StudentProfileState extends State<StudentProfile> {
             TextFormField(
               decoration: InputDecoration(labelText: 'Description'),
               onChanged: (val) {
-                setState(() { certificateData['description'] = val; });
+                setState(() {
+                  certificateData['description'] = val;
+                });
               },
               initialValue: certificateData['description'],
             ),
@@ -331,12 +375,14 @@ class _StudentProfileState extends State<StudentProfile> {
             Row(
               children: [
                 Expanded(
-                  child: Text(certificateData['file'] != null
-                      ? 'File selected'
-                      : 'No file selected'),
+                  child: Text(
+                    certificateData['file'] != null
+                        ? 'File selected'
+                        : 'No file selected',
+                  ),
                 ),
                 TextButton.icon(
-                  icon: Icon(MdIcons.file_upload_outline),
+                  icon: Icon(Icons.upload_file),
                   label: Text('Select File'),
                   onPressed: () {
                     // TODO: Implement file picker
@@ -346,12 +392,12 @@ class _StudentProfileState extends State<StudentProfile> {
             ),
             SizedBox(height: 8),
             uploadingCertificate
-              ? CircularProgressIndicator()
-              : ElevatedButton.icon(
-                  icon: Icon(MdIcons.file_upload_outline),
-                  label: Text('Upload Certificate'),
-                  onPressed: handleCertificateUpload,
-                ),
+                ? CircularProgressIndicator()
+                : ElevatedButton.icon(
+                    icon: Icon(Icons.upload_file),
+                    label: Text('Upload Certificate'),
+                    onPressed: handleCertificateUpload,
+                  ),
           ],
         ),
       ),
