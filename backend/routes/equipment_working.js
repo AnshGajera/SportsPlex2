@@ -1,9 +1,144 @@
+
 const express = require('express');
 const router = express.Router();
 const equipmentController = require('../controllers/equipmentController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
+const EquipmentAllocation = require('../models/equipmentAllocation');
 const EquipmentRequest = require('../models/equipmentRequest');
 const Equipment = require('../models/equipment');
+
+// Admin: Return equipment and update quantities
+router.post('/return/:allocationId', protect, isAdmin, async (req, res) => {
+  try {
+    const { allocationId } = req.params;
+    const { returnCondition, returnNotes } = req.body;
+    const allocation = await EquipmentAllocation.findById(allocationId).populate('equipment');
+    if (!allocation) {
+      return res.status(404).json({ error: 'Allocation not found' });
+    }
+    if (allocation.status !== 'allocated' && allocation.status !== 'overdue') {
+      return res.status(400).json({ error: 'Equipment is not currently allocated' });
+    }
+    allocation.status = 'returned';
+    allocation.actualReturnDate = new Date();
+    allocation.returnCondition = returnCondition;
+    allocation.returnNotes = returnNotes;
+    await allocation.save();
+    // Update equipment quantities
+    const equipment = allocation.equipment;
+    equipment.allocatedQuantity = (equipment.allocatedQuantity || 0) - allocation.quantityAllocated;
+    equipment.availableQuantity = (equipment.availableQuantity || 0) + allocation.quantityAllocated;
+    await equipment.save();
+    res.json({ message: 'Equipment returned successfully', allocation });
+  } catch (error) {
+    console.error('Error returning equipment:', error);
+    res.status(500).json({ error: 'Failed to return equipment' });
+  }
+});
+
+// Admin: Approve or reject equipment request
+router.put('/requests/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, expectedReturnDate, adminNotes } = req.body;
+    const request = await EquipmentRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    if (status === 'approved') {
+      // Allocate equipment immediately
+      const equipment = await Equipment.findById(request.equipment);
+      if (!equipment) {
+        return res.status(404).json({ error: 'Equipment not found' });
+      }
+      // Check available quantity
+      if ((equipment.availableQuantity || equipment.quantity) < request.quantityRequested) {
+        return res.status(400).json({ error: 'Insufficient equipment available for allocation' });
+      }
+      // Create allocation
+        const allocation = new EquipmentAllocation({
+          equipment: equipment._id,
+          allocatedTo: request.requester,
+          request: request._id,
+          quantityAllocated: request.quantityRequested,
+          allocationDate: new Date(),
+          expectedReturnDate: request.expectedReturnDate ? new Date(request.expectedReturnDate) : undefined,
+          status: 'allocated',
+          allocatedBy: req.user._id,
+        });
+      await allocation.save();
+      // Update equipment quantities
+      equipment.allocatedQuantity = (equipment.allocatedQuantity || 0) + request.quantityRequested;
+      equipment.availableQuantity = (equipment.availableQuantity || equipment.quantity) - request.quantityRequested;
+      await equipment.save();
+      request.status = 'allocated';
+      if (expectedReturnDate) request.expectedReturnDate = expectedReturnDate;
+      if (adminNotes) request.adminNotes = adminNotes;
+      request.reviewedBy = req.user._id;
+      await request.save();
+      res.json({ message: 'Request approved and equipment allocated', request });
+    } else {
+      if (status) request.status = status;
+      if (expectedReturnDate) request.expectedReturnDate = expectedReturnDate;
+      if (adminNotes) request.adminNotes = adminNotes;
+      request.reviewedBy = req.user._id;
+      await request.save();
+      res.json({ message: 'Request updated successfully', request });
+    }
+  } catch (error) {
+    console.error('Error updating equipment request:', error);
+    res.status(500).json({ error: 'Failed to update equipment request' });
+  }
+});
+
+// Admin: Get all current allocations
+router.get('/allocations', protect, isAdmin, async (req, res) => {
+  try {
+    const { status = 'allocated' } = req.query;
+    const allocations = await EquipmentAllocation.find({ status })
+      .populate('equipment', 'name category image')
+      .populate('allocatedTo', 'firstName lastName email department')
+      .populate('allocatedBy', 'firstName lastName')
+      .sort({ allocationDate: -1 });
+    res.json(allocations);
+  } catch (error) {
+    console.error('Error fetching allocations:', error);
+    res.status(500).json({ error: 'Failed to fetch allocations' });
+  }
+});
+
+// Admin: Get all equipment requests (for approval/management)
+router.get('/requests', protect, isAdmin, async (req, res) => {
+  try {
+    // Optionally filter by status (pending, approved, etc.)
+    const { status } = req.query;
+    const query = status ? { status } : {};
+    const requests = await EquipmentRequest.find(query)
+      .populate('equipment', 'name category image')
+      .populate('requester', 'firstName lastName email')
+      .sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (error) {
+    console.error('Error fetching equipment requests:', error);
+    res.status(500).json({ error: 'Failed to fetch equipment requests' });
+  }
+});
+
+// Get user's current allocations
+router.get('/allocations/my', protect, async (req, res) => {
+  try {
+    const allocations = await EquipmentAllocation.find({
+      allocatedTo: req.user._id,
+      status: { $in: ['allocated', 'overdue'] }
+    })
+      .populate('equipment', 'name category image')
+      .sort({ allocationDate: -1 });
+    res.json(allocations);
+  } catch (error) {
+    console.error('Error fetching user allocations:', error);
+    res.status(500).json({ error: 'Failed to fetch allocations' });
+  }
+});
 
 // Debug middleware
 router.use((req, res, next) => {
@@ -20,7 +155,7 @@ router.post('/request', protect, async (req, res) => {
     console.log('📝 POST /request - Request body:', req.body);
     console.log('👤 User making request:', req.user?.email);
     
-    const { equipmentId, duration, quantityRequested = 1, purpose } = req.body;
+  const { equipmentId, expectedReturnDate, quantityRequested = 1, purpose } = req.body;
     
     // Check if equipment exists
     const equipment = await Equipment.findById(equipmentId);
@@ -64,7 +199,7 @@ router.post('/request', protect, async (req, res) => {
       equipment: equipmentId,
       requester: req.user._id,
       quantityRequested,
-      duration,
+      expectedReturnDate,
       purpose
     });
     
