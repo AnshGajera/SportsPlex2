@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'app_config.dart';
 import 'dart:convert';
 
@@ -12,70 +13,12 @@ class StudentDashboard extends StatefulWidget {
 }
 
 class _StudentDashboardState extends State<StudentDashboard> {
-  Widget _buildSectionCard(
-    String title,
-    IconData icon,
-    String emptyText,
-    String buttonText,
-    VoidCallback onPressed,
-    Color color,
-  ) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Container(
-        padding: EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '0',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 24),
-            Center(child: Icon(icon, size: 40, color: Colors.grey[600])),
-            SizedBox(height: 12),
-            Center(child: Text(emptyText)),
-            SizedBox(height: 12),
-            Center(
-              child: ElevatedButton(
-                onPressed: onPressed,
-                child: Text(buttonText),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Map<String, dynamic>? userData;
   bool isLoading = true;
+  int activeRequests = 0;
+  int joinedClubs = 0;
+  int liveMatches = 0;
+  int announcements = 0;
 
   Future<void> fetchUserData() async {
     final response = await http.get(
@@ -86,14 +29,74 @@ class _StudentDashboardState extends State<StudentDashboard> {
       },
     );
     if (response.statusCode == 200) {
+      userData = jsonDecode(response.body);
+      await fetchStats();
       setState(() {
-        userData = jsonDecode(response.body);
         isLoading = false;
       });
     } else {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> fetchStats() async {
+    // Active Requests
+    final reqRes = await http.get(
+      Uri.parse('${AppConfig.baseUrl}/api/equipment/requests/my'),
+      headers: {
+        'Authorization': 'Bearer ${widget.token}',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (reqRes.statusCode == 200) {
+      final reqList = jsonDecode(reqRes.body) as List;
+      activeRequests = reqList.where((r) => r['status'] == 'pending').length;
+    }
+
+    // Joined Clubs
+    final clubsRes = await http.get(
+      Uri.parse('${AppConfig.baseUrl}/api/clubs'),
+      headers: {
+        'Authorization': 'Bearer ${widget.token}',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (clubsRes.statusCode == 200 && userData != null) {
+      final clubsList = jsonDecode(clubsRes.body) as List;
+      final userId = userData!['_id'];
+      joinedClubs = clubsList
+          .where(
+            (club) => (club['members'] as List).any((m) => m['user'] == userId),
+          )
+          .length;
+    }
+
+    // Live Matches
+    final matchesRes = await http.get(
+      Uri.parse('${AppConfig.baseUrl}/api/matches?status=ongoing'),
+      headers: {
+        'Authorization': 'Bearer ${widget.token}',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (matchesRes.statusCode == 200) {
+      final matchesData = jsonDecode(matchesRes.body);
+      liveMatches = (matchesData['matches'] as List).length;
+    }
+
+    // Announcements
+    final annRes = await http.get(
+      Uri.parse('${AppConfig.baseUrl}/api/events?category=announcement'),
+      headers: {
+        'Authorization': 'Bearer ${widget.token}',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (annRes.statusCode == 200) {
+      final annData = jsonDecode(annRes.body);
+      announcements = (annData['events'] as List).length;
     }
   }
 
@@ -106,67 +109,177 @@ class _StudentDashboardState extends State<StudentDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Student Dashboard')),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: PopupMenuButton<String>(
+              offset: const Offset(0, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              onSelected: (value) {
+                switch (value) {
+                  case 'Profile':
+                    Navigator.pushNamed(
+                      context,
+                      '/user-profile',
+                      arguments: {'userId': userData?['_id'] ?? ''},
+                    );
+                    break;
+                  case 'Request Equipment':
+                    Navigator.pushNamed(
+                      context,
+                      '/requestEquipment',
+                      arguments: {'userId': userData?['_id'] ?? ''},
+                    );
+                    break;
+                  case 'Join Clubs':
+                    Navigator.pushNamed(
+                      context,
+                      '/joinClubs',
+                      arguments: {'userId': userData?['_id'] ?? ''},
+                    );
+                    break;
+                  case 'Live Scores':
+                    Navigator.pushNamed(
+                      context,
+                      '/liveScores',
+                      arguments: {'userId': userData?['_id'] ?? ''},
+                    );
+                    break;
+                  case 'Announcements':
+                    Navigator.pushNamed(context, '/announcements');
+                    break;
+                  case 'Request Student Head':
+                    Navigator.pushNamed(
+                      context,
+                      '/requestStudentHead',
+                      arguments: {'userId': userData?['_id'] ?? ''},
+                    );
+                    break;
+                  case 'Logout':
+                    // Clear token and navigate to login
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/login',
+                      (route) => false,
+                    );
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'Profile',
+                  child: Text('Profile'),
+                ),
+                const PopupMenuItem(
+                  value: 'Request Equipment',
+                  child: Text('Request Equipment'),
+                ),
+                const PopupMenuItem(
+                  value: 'Join Clubs',
+                  child: Text('Join Clubs'),
+                ),
+                const PopupMenuItem(
+                  value: 'Live Scores',
+                  child: Text('Live Scores'),
+                ),
+                const PopupMenuItem(
+                  value: 'Announcements',
+                  child: Text('Announcements'),
+                ),
+                const PopupMenuItem(
+                  value: 'Request Student Head',
+                  child: Text('Request Student Head'),
+                ),
+                const PopupMenuItem(value: 'Logout', child: Text('Logout')),
+              ],
+              child: CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.blue[100],
+                child: userData != null && userData!['firstName'] != null
+                    ? Text(
+                        userData!['firstName'][0],
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      )
+                    : const Icon(Icons.person, color: Colors.blue, size: 24),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : userData == null
-          ? Center(child: Text('Failed to load user data'))
+          ? const Center(child: Text('Failed to load user data'))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Welcome, ${userData!['firstName']} ${userData!['lastName']}',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Manage your sports activities and stay updated',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
+
                   // Stats Cards
                   Wrap(
                     spacing: 16,
                     runSpacing: 16,
                     children: [
                       _buildStatCard(
-                        Icons.assignment,
+                        Icon(FontAwesomeIcons.fileAlt, color: Colors.blue),
                         'Active Requests',
-                        0,
+                        activeRequests,
                         Colors.blue,
                       ),
                       _buildStatCard(
-                        Icons.group,
+                        Icon(Icons.people, color: Colors.green),
                         'Joined Clubs',
-                        0,
+                        joinedClubs,
                         Colors.green,
                       ),
                       _buildStatCard(
-                        Icons.emoji_events,
+                        Icon(Icons.emoji_events, color: Colors.orange),
                         'Live Matches',
-                        0,
+                        liveMatches,
                         Colors.orange,
                       ),
                       _buildStatCard(
-                        Icons.notifications,
+                        Icon(Icons.notifications, color: Colors.purple),
                         'Announcements',
-                        0,
+                        announcements,
                         Colors.purple,
                       ),
                     ],
                   ),
-                  SizedBox(height: 32),
-                  Text(
+                  const SizedBox(height: 32),
+
+                  const Text(
                     'Quick Actions',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
+
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
+                    physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: 16,
                     crossAxisSpacing: 16,
                     childAspectRatio: 1.2,
@@ -221,7 +334,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 32),
+                  const SizedBox(height: 32),
+
                   // Recent Activities & Live Matches
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -234,7 +348,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           'No recent activities',
                           'Request Equipment',
                           () {
-                            // TODO: Navigate to equipment page
+                            // TODO: Navigate
                           },
                           Colors.blue[50]!,
                         ),
@@ -244,7 +358,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           'No live matches',
                           'View All Matches',
                           () {
-                            // TODO: Navigate to matches page
+                            // TODO: Navigate
                           },
                           Colors.orange[50]!,
                         ),
@@ -257,19 +371,23 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  Widget _buildStatCard(IconData icon, String label, int count, Color color) {
+  Widget _buildStatCard(
+    Widget iconWidget,
+    String label,
+    int count,
+    Color color,
+  ) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
-        constraints: BoxConstraints(minWidth: 80, maxWidth: 120),
-        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        constraints: const BoxConstraints(minWidth: 80, maxWidth: 120),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 28),
-            SizedBox(height: 8),
+            iconWidget,
+            const SizedBox(height: 8),
             Text(
               '$count',
               style: TextStyle(
@@ -278,12 +396,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               label,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[700],
+                color: Colors.grey.shade700,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -292,8 +411,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
       ),
     );
   }
-
-  // ...existing code...
 
   Widget _buildActionCard(
     IconData icon,
@@ -309,38 +426,98 @@ class _StudentDashboardState extends State<StudentDashboard> {
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         child: Container(
-          constraints: BoxConstraints(
-            minWidth: 120,
-            maxWidth: 180,
-            minHeight: 90,
-            maxHeight: 120, // further reduced
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 8,
-          ), // more compact
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             gradient: LinearGradient(colors: [Colors.white, color]),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(icon, size: 22, color: Colors.black87),
-              SizedBox(height: 7),
+              const SizedBox(height: 7),
               Text(
                 title,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 description,
-                style: TextStyle(fontSize: 11, color: Colors.grey[800]),
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade800),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard(
+    String title,
+    IconData icon,
+    String emptyText,
+    String buttonText,
+    VoidCallback onPressed,
+    Color color,
+  ) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    '0',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Center(child: Icon(icon, size: 40, color: Colors.grey[600])),
+            const SizedBox(height: 12),
+            Center(child: Text(emptyText)),
+            const SizedBox(height: 12),
+            Center(
+              child: ElevatedButton(
+                onPressed: onPressed,
+                child: Text(buttonText),
+              ),
+            ),
+          ],
         ),
       ),
     );
