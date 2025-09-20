@@ -6,7 +6,7 @@ import 'app_config.dart';
 
 class AdminEquipment extends StatefulWidget {
   final String? token;
-  
+
   const AdminEquipment({Key? key, this.token}) : super(key: key);
 
   @override
@@ -89,7 +89,9 @@ class _AdminEquipmentState extends State<AdminEquipment> {
       return imagePath;
     }
     // If it starts with /, remove it to avoid double slashes
-    final cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    final cleanPath = imagePath.startsWith('/')
+        ? imagePath.substring(1)
+        : imagePath;
     return '${AppConfig.baseUrl}/$cleanPath';
   }
 
@@ -208,13 +210,16 @@ class _AdminEquipmentState extends State<AdminEquipment> {
       }
     } catch (error) {
       print('Error adding equipment: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding equipment: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error adding equipment: $error')));
     }
   }
 
-  Future<void> handleEditEquipment(String equipmentId, Map<String, dynamic> equipmentData) async {
+  Future<void> handleEditEquipment(
+    String equipmentId,
+    Map<String, dynamic> equipmentData,
+  ) async {
     try {
       final response = await http.put(
         Uri.parse('$baseUrl/equipment/$equipmentId'),
@@ -527,11 +532,7 @@ class _AdminEquipmentState extends State<AdminEquipment> {
                     color: stat['color'].withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    stat['icon'],
-                    color: stat['color'],
-                    size: 20,
-                  ),
+                  child: Icon(stat['icon'], color: stat['color'], size: 20),
                 ),
               ],
             ),
@@ -547,10 +548,7 @@ class _AdminEquipmentState extends State<AdminEquipment> {
             SizedBox(height: 4),
             Text(
               stat['label'],
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -670,15 +668,21 @@ class _AdminEquipmentState extends State<AdminEquipment> {
     }
 
     // Filter equipment based on search term and category
-    List<Map<String, dynamic>> filteredEquipment = equipmentList.where((equipment) {
+    List<Map<String, dynamic>> filteredEquipment = equipmentList.where((
+      equipment,
+    ) {
       // Search term filter
       bool matchesSearch = true;
       if (searchTerm.isNotEmpty) {
         String searchLower = searchTerm.toLowerCase();
-        matchesSearch = (equipment['name']?.toLowerCase().contains(searchLower) ?? false) ||
-                       (equipment['category']?.toLowerCase().contains(searchLower) ?? false) ||
-                       (equipment['description']?.toLowerCase().contains(searchLower) ?? false) ||
-                       (equipment['location']?.toLowerCase().contains(searchLower) ?? false);
+        matchesSearch =
+            (equipment['name']?.toLowerCase().contains(searchLower) ?? false) ||
+            (equipment['category']?.toLowerCase().contains(searchLower) ??
+                false) ||
+            (equipment['description']?.toLowerCase().contains(searchLower) ??
+                false) ||
+            (equipment['location']?.toLowerCase().contains(searchLower) ??
+                false);
       }
 
       // Category filter
@@ -708,13 +712,10 @@ class _AdminEquipmentState extends State<AdminEquipment> {
           padding: EdgeInsets.only(bottom: 16),
           child: Text(
             'Showing ${filteredEquipment.length} of ${equipmentList.length} equipment items',
-            style: TextStyle(
-              color: Color(0xFF6B7280),
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
           ),
         ),
-        
+
         // Equipment list
         ListView.builder(
           shrinkWrap: true,
@@ -739,11 +740,11 @@ class _AdminEquipmentState extends State<AdminEquipment> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth > 600;
-                  
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (isWide) 
+                      if (isWide)
                         // Wide screen layout - image and content side by side
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -752,9 +753,7 @@ class _AdminEquipmentState extends State<AdminEquipment> {
                             _buildEquipmentImage(equipment, 120, 120),
                             SizedBox(width: 16),
                             // Content section
-                            Expanded(
-                              child: _buildEquipmentContent(equipment),
-                            ),
+                            Expanded(child: _buildEquipmentContent(equipment)),
                           ],
                         )
                       else
@@ -768,7 +767,8 @@ class _AdminEquipmentState extends State<AdminEquipment> {
                                 SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         equipment['name'] ?? '',
@@ -808,9 +808,13 @@ class _AdminEquipmentState extends State<AdminEquipment> {
   }
 
   // Helper method to build equipment image
-  Widget _buildEquipmentImage(Map<String, dynamic> equipment, double width, double height) {
+  Widget _buildEquipmentImage(
+    Map<String, dynamic> equipment,
+    double width,
+    double height,
+  ) {
     final imageUrl = buildImageUrl(equipment['image']);
-    
+
     if (imageUrl.isEmpty) {
       return Container(
         width: width,
@@ -879,10 +883,7 @@ class _AdminEquipmentState extends State<AdminEquipment> {
       children: [
         Text(
           equipment['name'] ?? '',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         SizedBox(height: 8),
         _buildEquipmentDetails(equipment),
@@ -918,7 +919,8 @@ class _AdminEquipmentState extends State<AdminEquipment> {
               style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
             ),
           ),
-        if (equipment['description'] != null && equipment['description'].isNotEmpty)
+        if (equipment['description'] != null &&
+            equipment['description'].isNotEmpty)
           Padding(
             padding: EdgeInsets.only(top: 4),
             child: Text(
@@ -1043,7 +1045,9 @@ class _AdminEquipmentState extends State<AdminEquipment> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Delete Equipment'),
-          content: Text('Are you sure you want to delete "${equipment['name']}"? This action cannot be undone.'),
+          content: Text(
+            'Are you sure you want to delete "${equipment['name']}"? This action cannot be undone.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -1067,21 +1071,15 @@ class _AdminEquipmentState extends State<AdminEquipment> {
   }
 
   Widget _buildRequestsTab() {
-    return Center(
-      child: Text('Requests tab content - will be implemented'),
-    );
+    return Center(child: Text('Requests tab content - will be implemented'));
   }
 
   Widget _buildAllocationsTab() {
-    return Center(
-      child: Text('Allocations tab content - will be implemented'),
-    );
+    return Center(child: Text('Allocations tab content - will be implemented'));
   }
 
   Widget _buildReturnsTab() {
-    return Center(
-      child: Text('Returns tab content - will be implemented'),
-    );
+    return Center(child: Text('Returns tab content - will be implemented'));
   }
 
   Widget _buildEmptyState(IconData icon, String title, String message) {
@@ -1089,11 +1087,7 @@ class _AdminEquipmentState extends State<AdminEquipment> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(icon, size: 64, color: Colors.grey[400]),
           SizedBox(height: 16),
           Text(
             title,
@@ -1107,10 +1101,7 @@ class _AdminEquipmentState extends State<AdminEquipment> {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),

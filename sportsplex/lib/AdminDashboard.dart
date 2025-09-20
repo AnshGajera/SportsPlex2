@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'dart:convert';
+import 'app_config.dart';
 
 class AdminDashboard extends StatefulWidget {
   final String token;
@@ -19,38 +20,47 @@ class _AdminDashboardState extends State<AdminDashboard> {
   bool isLoading = true;
 
   Future<void> fetchAdminAnalytics() async {
-    // Replace with your actual API endpoints
-    final equipmentRes = await http.get(
-      Uri.parse('http://192.168.43.154:5000/api/equipment'),
-    );
-    final requestsRes = await http.get(
-      Uri.parse(
-        'http://192.168.43.154:5000/api/equipment/requests?status=pending',
-      ),
-    );
-    final allocationsRes = await http.get(
-      Uri.parse(
-        'http://192.168.43.154:5000/api/equipment/allocations?status=allocated',
-      ),
-    );
-    final usersRes = await http.get(
-      Uri.parse('http://192.168.43.154:5000/api/users'),
-    );
-    setState(() {
-      totalEquipment = equipmentRes.statusCode == 200
-          ? (jsonDecode(equipmentRes.body) as List).length
-          : 0;
-      pendingRequests = requestsRes.statusCode == 200
-          ? (jsonDecode(requestsRes.body) as List).length
-          : 0;
-      activeAllocations = allocationsRes.statusCode == 200
-          ? (jsonDecode(allocationsRes.body) as List).length
-          : 0;
-      totalUsers = usersRes.statusCode == 200
-          ? (jsonDecode(usersRes.body) as List).length
-          : 0;
-      isLoading = false;
-    });
+    try {
+      // Replace with your actual API endpoints
+      final equipmentRes = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/equipment'),
+        headers: {'Authorization': 'Bearer ${widget.token}'},
+      );
+      final requestsRes = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/equipment/requests?status=pending'),
+        headers: {'Authorization': 'Bearer ${widget.token}'},
+      );
+      final allocationsRes = await http.get(
+        Uri.parse(
+          '${AppConfig.baseUrl}/api/equipment/allocations?status=allocated',
+        ),
+        headers: {'Authorization': 'Bearer ${widget.token}'},
+      );
+      final usersRes = await http.get(
+        Uri.parse('${AppConfig.baseUrl}/api/users'),
+        headers: {'Authorization': 'Bearer ${widget.token}'},
+      );
+      setState(() {
+        totalEquipment = equipmentRes.statusCode == 200
+            ? (jsonDecode(equipmentRes.body) as List).length
+            : 0;
+        pendingRequests = requestsRes.statusCode == 200
+            ? (jsonDecode(requestsRes.body) as List).length
+            : 0;
+        activeAllocations = allocationsRes.statusCode == 200
+            ? (jsonDecode(allocationsRes.body) as List).length
+            : 0;
+        totalUsers = usersRes.statusCode == 200
+            ? (jsonDecode(usersRes.body) as List).length
+            : 0;
+        isLoading = false;
+      });
+    } catch (error) {
+      print('Error fetching analytics: $error');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
