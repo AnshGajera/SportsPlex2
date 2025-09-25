@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Filter, Package, Clock, CheckCircle, XCircle, Plus, Users, AlertTriangle } from 'lucide-react';
+import { Search, Filter, Package, Clock, CheckCircle, XCircle, Plus, Users, AlertTriangle, BarChart3 } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import AddEquipmentModal from '../components/Modals/AddEquipmentModal';
+import { AdminBookingTable, BookingTimelineView } from '../components/Bookings';
+import AdminBookingDebug from '../components/Bookings/AdminBookingDebug';
+import NotificationCenter from '../components/Bookings/NotificationCenter';
+import { RealTimeStatus, useBookingNotifications } from '../hooks/useRealTimeBookings';
 import api from '../services/api';
 
 // Timer card for each allocation
@@ -126,6 +130,13 @@ const AdminEquipment = () => {
   const [equipmentList, setEquipmentList] = useState([]);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editEquipment, setEditEquipment] = useState(null);
+
+  // Add notification system
+  const {
+    notifications,
+    addNotification,
+    removeNotification
+  } = useBookingNotifications();
 
   const categories = [
     'All Categories',
@@ -388,6 +399,12 @@ const AdminEquipment = () => {
 
   return (
     <div className="container" style={{ padding: '32px 20px' }}>
+      {/* Notification Center */}
+      <NotificationCenter 
+        notifications={notifications} 
+        onRemove={removeNotification} 
+      />
+
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -565,6 +582,13 @@ const AdminEquipment = () => {
             onClick={() => setActiveTab('returns')}
           >
             Manage Returns
+          </button>
+          <button 
+            className={`tab ${activeTab === 'bookings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('bookings')}
+          >
+            <BarChart3 size={16} style={{ marginRight: '6px' }} />
+            Booking Analytics
           </button>
         </div>
 
@@ -884,6 +908,37 @@ const AdminEquipment = () => {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Booking Analytics Tab */}
+      {activeTab === 'bookings' && (
+        <div>
+          <div style={{ marginBottom: '24px' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '8px', color: '#2c3e50' }}>
+              Equipment Booking Analytics
+            </h2>
+            <p style={{ color: '#6c757d', marginBottom: '20px' }}>
+              Comprehensive view of all equipment bookings, user activity, and booking patterns.
+            </p>
+          </div>
+          
+          {/* Debug Component - Remove after fixing */}
+          <AdminBookingDebug />
+          
+          {/* Admin Booking Table */}
+          <AdminBookingTable />
+          
+          {/* Booking Timeline Section */}
+          <div style={{ marginTop: '32px' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '16px', color: '#2c3e50' }}>
+              Equipment Booking Timeline
+            </h3>
+            <p style={{ color: '#6c757d', marginBottom: '16px' }}>
+              Visual timeline showing booking patterns and utilization across all equipment.
+            </p>
+            <BookingTimelineView isAdmin={true} />
+          </div>
         </div>
       )}
       

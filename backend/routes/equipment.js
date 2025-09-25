@@ -13,6 +13,89 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Equipment routes are working!' });
 });
 
+// Test admin route
+router.get('/admin-test', protect, isAdmin, (req, res) => {
+  console.log('🧪 Admin test route hit by user:', req.user.email);
+  res.json({ 
+    message: 'Admin routes are working!', 
+    user: {
+      id: req.user._id,
+      email: req.user.email,
+      role: req.user.role
+    }
+  });
+});
+
+// Create sample booking data for testing (admin only)
+router.post('/create-sample-bookings', protect, isAdmin, async (req, res) => {
+  try {
+    console.log('🧪 Creating sample booking data...');
+    
+    // Get a sample equipment item
+    const equipment = await Equipment.findOne({ isActive: true });
+    if (!equipment) {
+      return res.status(404).json({ error: 'No equipment found to create sample bookings' });
+    }
+
+    // Get a sample user (not admin)
+    const user = await User.findOne({ role: 'user' });
+    if (!user) {
+      return res.status(404).json({ error: 'No regular users found to create sample bookings' });
+    }
+
+    // Create a sample equipment request
+    const sampleRequest = new EquipmentRequest({
+      equipment: equipment._id,
+      requester: user._id,
+      quantity: 2,
+      requestDate: new Date(),
+      expectedStartDate: new Date(),
+      expectedEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      purpose: 'Sample booking for testing analytics',
+      status: 'approved',
+      reviewedBy: req.user._id,
+      reviewDate: new Date()
+    });
+
+    await sampleRequest.save();
+
+    // Create a sample allocation
+    const sampleAllocation = new EquipmentAllocation({
+      equipment: equipment._id,
+      allocatedTo: user._id,
+      request: sampleRequest._id,
+      quantityAllocated: 2,
+      allocationDate: new Date(),
+      expectedReturnDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      allocatedBy: req.user._id,
+      status: 'allocated'
+    });
+
+    await sampleAllocation.save();
+
+    // Update equipment quantities
+    equipment.allocatedQuantity = (equipment.allocatedQuantity || 0) + 2;
+    equipment.availableQuantity = equipment.quantity - equipment.allocatedQuantity;
+    await equipment.save();
+
+    console.log('✅ Sample booking data created successfully');
+    
+    res.json({ 
+      message: 'Sample booking data created successfully',
+      data: {
+        request: sampleRequest,
+        allocation: sampleAllocation,
+        equipment: equipment.name,
+        user: user.firstName + ' ' + user.lastName
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating sample booking data:', error);
+    res.status(500).json({ error: 'Failed to create sample booking data', details: error.message });
+  }
+});
+
 // Import dependencies after basic route setup
 const equipmentController = require('../controllers/equipmentController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -20,9 +103,148 @@ const equipmentUpload = require('../middleware/equipmentUpload');
 const EquipmentRequest = require('../models/equipmentRequest');
 const EquipmentAllocation = require('../models/equipmentAllocation');
 const Equipment = require('../models/equipment');
+const User = require('../models/user');
+const EquipmentAllocation = require('../models/equipmentAllocation');
+const Equipment = require('../models/equipment');
 
 // Get all equipment (user & admin)
 router.get('/', protect, equipmentController.getAllEquipment);
+
+// Get public equipment bookings (visible to all users)
+router.get('/bookings/public', protect, async (req, res) => {
+  try {
+    const activeBookings = await EquipmentAllocation.find({
+      status: 'allocated'
+    })
+    .populate('equipment', 'name category image')
+    .populate('allocatedTo', 'firstName lastName')
+    .select('equipment allocatedTo quantityAllocated allocationDate expectedReturnDate status')
+    .sort({ allocationDate: -1 });
+
+    // Format the response for public view
+    const publicBookings = activeBookings.map(booking => ({
+      equipmentId: booking.equipment._id,
+      equipmentName: booking.equipment.name,
+      category: booking.equipment.category,
+      image: booking.equipment.image,
+      quantity: booking.quantityAllocated,
+      allocatedDate: booking.allocationDate,
+      expectedReturnDate: booking.expectedReturnDate,
+      status: booking.status,
+      // Hide specific user details for privacy, show only initials
+      allocatedToInitials: `${booking.allocatedTo.firstName[0]}${booking.allocatedTo.lastName[0]}`,
+      daysRemaining: Math.ceil((new Date(booking.expectedReturnDate) - new Date()) / (1000 * 60 * 60 * 24))
+    }));
+
+    res.json(publicBookings);
+  } catch (error) {
+    console.error('Error fetching public bookings:', error);
+    res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+});
+
+// Get detailed equipment bookings (admin only - includes full user details)
+router.get('/bookings/admin', protect, isAdmin, async (req, res) => {
+  try {
+    const { status = 'all', page = 1, limit = 20 } = req.query;
+    const skip = (page - 1) * limit;
+    
+    let filter = {};
+    if (status !== 'all') {
+      filter.status = status;
+    }
+
+    const [bookings, totalCount] = await Promise.all([
+      EquipmentAllocation.find(filter)
+        .populate('equipment', 'name category image location')
+        .populate('allocatedTo', 'firstName lastName email studentId')
+        .populate('allocatedBy', 'firstName lastName')
+        .populate('request', 'purpose requestDate')
+        .sort({ allocationDate: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      EquipmentAllocation.countDocuments(filter)
+    ]);
+
+    // Enhanced response with calculated fields
+    const detailedBookings = bookings.map(booking => {
+      const now = new Date();
+      const returnDate = new Date(booking.expectedReturnDate);
+      const daysRemaining = Math.ceil((returnDate - now) / (1000 * 60 * 60 * 24));
+      const isOverdue = daysRemaining < 0;
+      
+      return {
+        _id: booking._id,
+        equipment: booking.equipment,
+        allocatedTo: booking.allocatedTo,
+        allocatedBy: booking.allocatedBy,
+        request: booking.request,
+        quantityAllocated: booking.quantityAllocated,
+        allocationDate: booking.allocationDate,
+        expectedReturnDate: booking.expectedReturnDate,
+        actualReturnDate: booking.actualReturnDate,
+        status: isOverdue && booking.status === 'allocated' ? 'overdue' : booking.status,
+        returnCondition: booking.returnCondition,
+        returnNotes: booking.returnNotes,
+        daysRemaining,
+        isOverdue,
+        urgencyLevel: daysRemaining <= 1 ? 'high' : daysRemaining <= 3 ? 'medium' : 'low'
+      };
+    });
+
+    res.json({
+      bookings: detailedBookings,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalCount / limit),
+        totalCount,
+        hasNext: skip + bookings.length < totalCount,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin bookings:', error);
+    res.status(500).json({ error: 'Failed to fetch detailed bookings' });
+  }
+});
+
+// Get equipment with current booking status
+router.get('/with-bookings', protect, async (req, res) => {
+  try {
+    const equipment = await Equipment.find({ isActive: true });
+    const activeAllocations = await EquipmentAllocation.find({
+      status: 'allocated'
+    }).populate('allocatedTo', 'firstName lastName');
+
+    // Create a map of equipment bookings
+    const bookingMap = {};
+    activeAllocations.forEach(allocation => {
+      const equipId = allocation.equipment.toString();
+      if (!bookingMap[equipId]) {
+        bookingMap[equipId] = [];
+      }
+      bookingMap[equipId].push({
+        quantity: allocation.quantityAllocated,
+        allocatedDate: allocation.allocationDate,
+        expectedReturnDate: allocation.expectedReturnDate,
+        allocatedToInitials: `${allocation.allocatedTo.firstName[0]}${allocation.allocatedTo.lastName[0]}`,
+        daysRemaining: Math.ceil((new Date(allocation.expectedReturnDate) - new Date()) / (1000 * 60 * 60 * 24))
+      });
+    });
+
+    // Combine equipment with booking info
+    const equipmentWithBookings = equipment.map(item => ({
+      ...item.toObject(),
+      currentBookings: bookingMap[item._id.toString()] || [],
+      hasActiveBookings: (bookingMap[item._id.toString()] || []).length > 0
+    }));
+
+    res.json(equipmentWithBookings);
+  } catch (error) {
+    console.error('Error fetching equipment with bookings:', error);
+    res.status(500).json({ error: 'Failed to fetch equipment with booking status' });
+  }
+});
 
 // Migrate existing equipment data (admin only) - Run this once to update legacy data
 router.post('/migrate', protect, isAdmin, async (req, res) => {

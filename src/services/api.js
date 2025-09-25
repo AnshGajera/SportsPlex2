@@ -13,10 +13,17 @@ const api = axios.create({
  * This ensures that your authenticated routes on the backend are protected.
  */
 api.interceptors.request.use((config) => {
-  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-
-  if (userInfo && userInfo.token) {
-    config.headers.Authorization = `Bearer ${userInfo.token}`;
+  // First try to get authToken (our new storage method)
+  const authToken = localStorage.getItem('authToken');
+  
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`;
+  } else {
+    // Fallback to old userInfo method for backward compatibility
+    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    if (userInfo && userInfo.token) {
+      config.headers.Authorization = `Bearer ${userInfo.token}`;
+    }
   }
 
   return config;

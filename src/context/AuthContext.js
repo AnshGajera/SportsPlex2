@@ -29,6 +29,12 @@ export const AuthProvider = ({ children }) => {
       // Set backend user
       setCurrentUser(data);
       localStorage.setItem('userInfo', JSON.stringify(data));
+      
+      // Store the JWT token separately for API calls
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+      
       return data;
     } catch (error) {
       console.error("Google Sign-In Failed", error);
