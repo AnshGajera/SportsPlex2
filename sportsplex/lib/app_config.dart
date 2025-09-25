@@ -1,10 +1,10 @@
 import 'dart:io';
 
 class AppConfig {
-  // Fixed IP for physical devices - use your computer's current IP
+  // Use the correct IP address for mobile device connection
   static const String baseUrl = 'http://192.168.43.154:5000';
 
-  // Alternative: Environment-based configuration
+  // Alternative: Environment-based configuration  
   static const String _developmentUrl = 'http://192.168.43.154:5000';
   static const String _productionUrl = 'https://your-production-domain.com';
 

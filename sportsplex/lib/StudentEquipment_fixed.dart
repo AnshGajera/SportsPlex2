@@ -62,13 +62,28 @@ class _StudentEquipmentState extends State<StudentEquipment> {
 
   Future<void> fetchMyAllocations() async {
     try {
-      // For now, just set empty allocations since this requires authentication
-      // We can add authentication later
-      print('Skipping my allocations for now (requires authentication)');
-      setState(() {
-        myAllocations = [];
-        isAllocLoading = false;
-      });
+      print('Fetching allocations from: ${AppConfig.baseUrl}/api/equipment-working/allocations/my?userId=${widget.userId}');
+      final response = await http.get(
+        Uri.parse(
+          '${AppConfig.baseUrl}/api/equipment-working/allocations/my?userId=${widget.userId}',
+        ),
+      );
+      
+      print('Allocations API Response Status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          myAllocations = data is List ? data : [];
+          isAllocLoading = false;
+        });
+      } else {
+        print('Allocations API Error: ${response.statusCode} - ${response.body}');
+        setState(() {
+          myAllocations = [];
+          isAllocLoading = false;
+        });
+      }
     } catch (e) {
       print('Allocations API Exception: $e');
       setState(() {
@@ -83,9 +98,9 @@ class _StudentEquipmentState extends State<StudentEquipment> {
       isAvailabilityLoading = true;
     });
     try {
-      print('Fetching all allocations from: ${AppConfig.baseUrl}/api/equipment/allocations/public');
+      print('Fetching all allocations from: ${AppConfig.baseUrl}/api/equipment-working/allocations');
       final response = await http.get(
-        Uri.parse('${AppConfig.baseUrl}/api/equipment/allocations/public'),
+        Uri.parse('${AppConfig.baseUrl}/api/equipment-working/allocations'),
       );
       
       print('All Allocations API Response Status: ${response.statusCode}');
@@ -263,246 +278,188 @@ class _StudentEquipmentState extends State<StudentEquipment> {
     }
 
     return Card(
-      elevation: 2,
-      shadowColor: Colors.grey.withOpacity(0.1),
+      elevation: 8,
+      shadowColor: Colors.grey.withOpacity(0.3),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        height: 180,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
-          border: Border.all(
-            color: Colors.grey.withOpacity(0.2),
-            width: 1,
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              categoryColor.withOpacity(0.05),
+            ],
           ),
         ),
         child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left side - Information
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Equipment Name
-                    Text(
-                      name,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+              // Header with icon and category
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: categoryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    
-                    SizedBox(height: 8),
-                    
-                    // Category
-                    Text(
-                      'Category: $category',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                    child: Icon(
+                      iconData,
+                      size: 32,
+                      color: categoryColor,
                     ),
-                    
-                    SizedBox(height: 8),
-                    
-                    // Available with green badge
-                    Row(
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Available: $available / $totalQuantity',
+                          name,
                           style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
                           ),
                         ),
-                        SizedBox(width: 8),
+                        SizedBox(height: 4),
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: available > 0 ? Colors.green : Colors.red,
-                            borderRadius: BorderRadius.circular(4),
+                            color: categoryColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            available > 0 ? '${((available / totalQuantity) * 100).round()}% Available' : 'Unavailable',
+                            category,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
+                              color: categoryColor,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    
-                    SizedBox(height: 8),
-                    
-                    // Condition
-                    Text(
-                      'Condition: ${equipment[index]['condition'] ?? 'Good'}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    
-                    SizedBox(height: 8),
-                    
-                    // Location
-                    Text(
-                      'Location: ${equipment[index]['location'] ?? 'Sports Complex'}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    
-                    if (description.isNotEmpty) ...[
-                      SizedBox(height: 8),
-                      Text(
-                        'Description: $description',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    
-                    SizedBox(height: 12),
-                    
-                    // Currently Allocated
-                    Row(
-                      children: [
-                        Icon(Icons.assignment, size: 16, color: Colors.blue),
-                        SizedBox(width: 4),
-                        Text(
-                          'Currently Allocated: $currentAllocated units',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    
-                    Spacer(),
-                    
-                    // Action Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 36,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: available > 0 ? Colors.blue : Colors.grey[400],
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        onPressed: available > 0 ? () {
-                          setState(() {
-                            selectedIndex = index;
-                            requestStartDate = null;
-                            expectedReturnDate = null;
-                            requestQuantity = 1;
-                            requestPurpose = '';
-                          });
-                          showDialog(
-                            context: context,
-                            builder: (_) => buildRequestModal(index),
-                          );
-                        } : null,
-                        child: Text(
-                          'Request Equipment',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
+                  ),
+                ],
+              ),
+              
+              SizedBox(height: 16),
+              
+              // Description
+              if (description.isNotEmpty) ...[
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 16),
+              ],
+              
+              // Availability Stats
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem('Total', totalQuantity.toString(), Colors.blue),
+                    _buildStatItem('Available', available.toString(), available > 0 ? Colors.green : Colors.red),
+                    if (currentAllocated > 0)
+                      _buildStatItem('In Use', currentAllocated.toString(), Colors.orange),
                   ],
                 ),
               ),
               
-              // Right side - Equipment Image
-              SizedBox(width: 16),
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.grey.withOpacity(0.2),
-                    width: 1,
+              SizedBox(height: 20),
+              
+              // Action Button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: available > 0 ? categoryColor : Colors.grey[400],
+                    foregroundColor: Colors.white,
+                    elevation: available > 0 ? 4 : 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: (equipment[index]['image'] != null && equipment[index]['image'].toString().isNotEmpty)
-                    ? Image.network(
-                        equipment[index]['image'].toString().startsWith('http') 
-                          ? equipment[index]['image']
-                          : '${AppConfig.baseUrl}${equipment[index]['image']}',
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 120,
-                            height: 120,
-                            color: categoryColor.withOpacity(0.1),
-                            child: Icon(
-                              iconData,
-                              size: 40,
-                              color: categoryColor,
-                            ),
-                          );
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            width: 120,
-                            height: 120,
-                            color: Colors.grey[50],
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                    : null,
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(categoryColor),
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    : Container(
-                        width: 120,
-                        height: 120,
-                        color: categoryColor.withOpacity(0.1),
-                        child: Icon(
-                          iconData,
-                          size: 40,
-                          color: categoryColor,
+                  onPressed: available > 0 ? () {
+                    setState(() {
+                      selectedIndex = index;
+                      requestStartDate = null;
+                      expectedReturnDate = null;
+                      requestQuantity = 1;
+                      requestPurpose = '';
+                    });
+                    showDialog(
+                      context: context,
+                      builder: (_) => buildRequestModal(index),
+                    );
+                  } : null,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        available > 0 ? Icons.add_shopping_cart : Icons.block,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        available > 0 ? 'Request Equipment' : 'Currently Unavailable',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 
@@ -856,7 +813,7 @@ class _StudentEquipmentState extends State<StudentEquipment> {
                       final available = totalQuantity - currentAllocated;
                       
                       return Padding(
-                        padding: EdgeInsets.only(bottom: 12),
+                        padding: EdgeInsets.only(bottom: 16),
                         child: _buildEquipmentCard(item, available, totalQuantity, currentAllocated, index),
                       );
                     },

@@ -14,6 +14,40 @@ router.use((req, res, next) => {
   next();
 });
 
+// Public test route
+router.get('/test', (req, res) => {
+  console.log('🧪 Public test route hit!');
+  res.json({ message: 'Equipment routes are working!' });
+});
+
+// Public equipment list (for mobile app without authentication)
+router.get('/public', async (req, res) => {
+  try {
+    console.log('📱 Public equipment route hit for mobile app');
+    const equipment = await Equipment.find().select('name description quantity category');
+    console.log(`📦 Found ${equipment.length} equipment items`);
+    res.json(equipment);
+  } catch (error) {
+    console.error('❌ Error fetching public equipment:', error);
+    res.status(500).json({ message: 'Error fetching equipment', error: error.message });
+  }
+});
+
+// Public allocations (for mobile app to check availability)
+router.get('/allocations/public', async (req, res) => {
+  try {
+    console.log('📱 Public allocations route hit for mobile app');
+    const allocations = await EquipmentAllocation.find({ status: 'allocated' })
+      .populate('equipment', 'name category')
+      .select('equipment quantityAllocated allocationDate expectedReturnDate status');
+    console.log(`📦 Found ${allocations.length} active allocations`);
+    res.json(allocations);
+  } catch (error) {
+    console.error('❌ Error fetching public allocations:', error);
+    res.status(500).json({ message: 'Error fetching allocations', error: error.message });
+  }
+});
+
 // Test admin route
 router.get('/admin-test', protect, isAdmin, (req, res) => {
   console.log('🧪 Admin test route hit by user:', req.user.email);
