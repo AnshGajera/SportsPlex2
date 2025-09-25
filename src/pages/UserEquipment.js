@@ -3,7 +3,7 @@ import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { Package, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import api from '../services/api';
 
@@ -125,13 +125,16 @@ const UserEquipment = () => {
         quantityRequested: requestQuantity,
         purpose: requestPurpose
       });
+      
       setRequestModalOpen(false);
       setRequestEquipment(null);
+      setRequestDuration('');
       setRequestPurpose('');
       setRequestQuantity(1);
       setRequestStartDate(dayjs());
       setExpectedReturnDate(null);
       alert('Request sent to admin successfully!');
+      
       // Refresh data
       fetchEquipment();
       fetchMyRequests();
@@ -151,21 +154,25 @@ const UserEquipment = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [analyticsData, setAnalyticsData] = useState([
-    { icon: Package, count: 0, label: 'Total Equipment', color: '#3b82f6' },
+    { icon: Package, count: 0, label: 'Available Equipment', color: '#3b82f6' },
     { icon: Clock, count: 0, label: 'Pending Requests', color: '#f59e0b' },
-    { icon: CheckCircle, count: 0, label: 'Approved', color: '#10b981' },
-    { icon: XCircle, count: 0, label: 'Current Allocations', color: '#8b5cf6' }
+    { icon: CheckCircle, count: 0, label: 'Approved Requests', color: '#10b981' },
+    { icon: AlertTriangle, count: 0, label: 'Current Allocations', color: '#8b5cf6' }
   ]);
 
   const categories = [
     'All Categories',
     'Basketball',
-    'Football',
+    'Football', 
     'Tennis',
     'Cricket',
     'Badminton',
     'Table Tennis',
-    'Volleyball'
+    'Volleyball',
+    'Swimming',
+    'Athletics',
+    'Fitness',
+    'Other'
   ];
 
   // Fetch functions
@@ -250,13 +257,22 @@ const UserEquipment = () => {
   return (
     <div className="container" style={{ padding: '32px 20px' }}>
       {/* Header */}
-      <div style={{ marginBottom: '16px' }}>
-        <h1 className="page-title">Equipment Management</h1>
-        <p className="page-subtitle">
-          {activeTab === 'browse'
-            ? 'Browse and request equipment'
-            : 'Track your equipment requests'}
-        </p>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'start',
+        marginBottom: '16px'
+      }}>
+        <div>
+          <h1 className="page-title">Sports Equipment</h1>
+          <p className="page-subtitle">
+            {activeTab === 'browse'
+              ? 'Browse and request sports equipment'
+              : activeTab === 'requests'
+              ? 'Track your equipment requests'
+              : 'View your current allocations'}
+          </p>
+        </div>
       </div>
 
       {/* Analytics Cards */}
@@ -332,10 +348,10 @@ const UserEquipment = () => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '20px',
+          justifyContent: 'flex-start',
           marginBottom: '16px',
-          flexWrap: 'nowrap',
-          flexShrink: 0
+          gap: '20px',
+          flexWrap: 'nowrap'
         }}
       >
         <div className="tabs" style={{ flexShrink: 0 }}>
@@ -361,16 +377,18 @@ const UserEquipment = () => {
 
         {activeTab === 'browse' && (
           <>
-            <SearchBar
-              placeholder="Search equipment by name or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                transform: 'translateY(-7px)',
-                minWidth: '300px',
-                maxWidth: '400px'
-              }}
-            />
+            <div style={{ 
+              minWidth: '280px', 
+              maxWidth: '350px',
+              flexShrink: 0,
+              transform: 'translateY(-7px)'
+            }}>
+              <SearchBar
+                placeholder="Search equipment..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
@@ -432,7 +450,12 @@ const UserEquipment = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-1">
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '20px',
+              marginTop: '20px'
+            }}>
               {filteredEquipment.map((equipment, index) => (
                 <div
                   key={index}
@@ -998,6 +1021,165 @@ const UserEquipment = () => {
       )}
 
 
+    </div>
+  );
+};
+
+// EquipmentCard component with modern design
+const EquipmentCard = ({ equipment, onRequest }) => {
+  const handleImageError = (e) => {
+    console.log('Equipment image failed to load:', e.target.src);
+    e.target.style.display = 'none';
+    e.target.parentElement.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+  };
+
+  const imageUrl = equipment.image ? `http://localhost:5000${equipment.image}` : null;
+  const availableQty = equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity;
+  const isAvailable = availableQty > 0;
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden cursor-pointer group">
+      {/* Header Section with Title */}
+      <div className="p-4 border-b border-gray-100">
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0 pr-3">
+            <h3 className="text-lg font-semibold text-gray-900 leading-tight group-hover:text-blue-600 transition-colors truncate">
+              {equipment.name}
+            </h3>
+            <span className="inline-block mt-2 px-3 py-1 text-xs font-medium bg-purple-50 text-purple-700 rounded-full">
+              {equipment.category}
+            </span>
+          </div>
+          
+          {/* Availability Status */}
+          <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            isAvailable 
+              ? 'bg-green-100 text-green-700 border border-green-200' 
+              : 'bg-red-100 text-red-700 border border-red-200'
+          }`}>
+            {isAvailable ? `${availableQty} Available` : 'Not Available'}
+          </div>
+        </div>
+      </div>
+
+      {/* Equipment Image Section */}
+      <div className="px-4 pt-2">
+        <div className="relative h-48 bg-gradient-to-br from-gray-50 to-white rounded-xl overflow-hidden border-2 border-gray-100 group-hover:border-purple-200 transition-all duration-300 shadow-inner">
+          {/* Dynamic Background Pattern */}
+          <div className="absolute inset-0 opacity-[0.03]">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `
+                radial-gradient(circle at 25% 25%, #8b5cf6 2px, transparent 2px),
+                radial-gradient(circle at 75% 75%, #3b82f6 2px, transparent 2px),
+                radial-gradient(circle at 50% 50%, #10b981 1px, transparent 1px)
+              `,
+              backgroundSize: '60px 60px, 80px 80px, 40px 40px'
+            }}></div>
+          </div>
+          
+          {/* Main Content Container */}
+          <div className="relative h-full flex items-center justify-center p-4">
+            {equipment.image ? (
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative max-w-full max-h-full flex items-center justify-center">
+                  <div className="relative">
+                    <img
+                      src={imageUrl}
+                      alt={`${equipment.name}`}
+                      onError={handleImageError}
+                      className="max-w-full max-h-full object-contain group-hover:scale-105 transition-all duration-700 ease-out"
+                      style={{ 
+                        filter: 'drop-shadow(0 10px 25px rgba(0, 0, 0, 0.1)) drop-shadow(0 4px 10px rgba(139, 92, 246, 0.1))',
+                        maxWidth: '200px',
+                        maxHeight: '200px'
+                      }}
+                    />
+                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-purple-200/20 via-blue-200/20 to-transparent rounded-lg blur-xl group-hover:blur-2xl transition-all duration-700"></div>
+                  </div>
+                </div>
+                
+                {/* Floating decorative elements */}
+                <div className="absolute top-4 left-4 w-3 h-3 bg-purple-400/30 rounded-full animate-pulse"></div>
+                <div className="absolute bottom-6 right-6 w-2 h-2 bg-blue-400/30 rounded-full animate-pulse delay-300"></div>
+                <div className="absolute top-1/3 right-4 w-1.5 h-1.5 bg-green-400/30 rounded-full animate-pulse delay-700"></div>
+              </div>
+            ) : (
+              /* Enhanced Premium Fallback Design */
+              <div className="text-center relative w-full">
+                {/* Main Equipment Icon */}
+                <div className="relative mb-4 flex justify-center">
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-gradient-to-br from-purple-500 via-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center mx-auto shadow-2xl relative overflow-hidden group-hover:scale-105 transition-all duration-500 border border-white/20">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[300%] transition-transform duration-1000 ease-out"></div>
+                      <Package size={32} className="text-white relative z-10" />
+                      <div className="absolute inset-2 rounded-xl bg-white/10 backdrop-blur-sm"></div>
+                    </div>
+                    <div className="absolute inset-0 w-24 h-24 mx-auto rounded-2xl border-2 border-purple-300/30 group-hover:border-purple-400/50 group-hover:rotate-180 transition-all duration-1000 ease-out"></div>
+                    <div className="absolute inset-0 w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-purple-400/20 to-blue-600/20 animate-pulse blur-sm"></div>
+                  </div>
+                </div>
+                
+                {/* Modern Typography */}
+                <div className="space-y-2 px-2">
+                  <h4 className="text-lg font-bold text-gray-800 leading-tight truncate group-hover:text-purple-700 transition-colors">
+                    {equipment.name}
+                  </h4>
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="w-1 h-1 bg-purple-400 rounded-full"></div>
+                    <span className="text-xs text-gray-500 font-medium uppercase tracking-widest">Sports Equipment</span>
+                    <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Modern corner accents */}
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-purple-50 via-blue-50/50 to-transparent rounded-bl-3xl opacity-60"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-indigo-50 via-purple-50/50 to-transparent rounded-tr-3xl opacity-60"></div>
+        </div>
+      </div>
+      
+      {/* Equipment Info and Actions */}
+      <div className="p-4">
+        <div className="mb-3">
+          <p className="text-sm text-gray-600 leading-relaxed mb-2 overflow-hidden" style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical'
+          }}>
+            {equipment.description || 'High-quality sports equipment available for use.'}
+          </p>
+        </div>
+        
+        {/* Stats and Info */}
+        <div className="flex items-center justify-between mb-3 pt-2 border-t border-gray-100">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center text-sm text-gray-500">
+              <Package size={14} className="mr-1.5 text-purple-500" />
+              <span className="font-medium text-gray-700">{availableQty}</span>
+              <span className="ml-1">/{equipment.quantity}</span>
+            </div>
+            <div className="flex items-center text-sm text-gray-500">
+              <CheckCircle size={14} className="mr-1.5 text-green-500" />
+              <span className="font-medium text-gray-700">{equipment.condition || 'Good'}</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Request Button */}
+        <button
+          onClick={() => onRequest(equipment)}
+          disabled={!isAvailable}
+          className={`w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${
+            isAvailable
+              ? 'bg-purple-600 text-white hover:bg-purple-700 hover:shadow-lg transform hover:-translate-y-0.5'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          {isAvailable ? 'Request Equipment' : 'Not Available'}
+        </button>
+      </div>
     </div>
   );
 };

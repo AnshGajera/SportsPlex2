@@ -3,11 +3,67 @@ import { Trophy, Play, Calendar, CheckCircle } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import api from '../services/api';
 
+// Add CSS for pulse animation
+const pulseStyle = document.createElement('style');
+pulseStyle.textContent = `
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+`;
+document.head.appendChild(pulseStyle);
+
 
 const getMatchStatus = (match) => {
   const now = new Date();
   const start = new Date(match.matchDate);
-  const durationMinutes = Number(match.duration) || 90;
+  
+  // Get duration based on sport type
+  let durationMinutes = 90; // default duration
+  if (match.sport?.toLowerCase().includes('cricket')) {
+    // Cricket duration based on format
+    const format = match.matchConfig?.cricketConfig?.format || 'T20';
+    switch (format) {
+      case 'T20':
+      case 'T10':
+        durationMinutes = 180; // 3 hours for T20/T10
+        break;
+      case 'ODI':
+        durationMinutes = 480; // 8 hours for ODI
+        break;
+      case 'Test':
+        durationMinutes = 6 * 60; // 6 hours per day for Test
+        break;
+      default:
+        durationMinutes = 180;
+    }
+  } else if (match.sport?.toLowerCase().includes('football')) {
+    durationMinutes = match.matchConfig?.footballConfig?.duration || 90;
+  } else if (match.sport?.toLowerCase().includes('basketball')) {
+    const quarterDuration = match.matchConfig?.basketballConfig?.quarterDuration || 12;
+    durationMinutes = quarterDuration * 4 + 15; // 4 quarters + breaks
+  }
+  
+  // If match has explicit status in database, use that first
+  if (match.status) {
+    // Only override database status with time-based calculation for automatic transitions
+    const end = new Date(start.getTime() + durationMinutes * 60000);
+    
+    // Auto-transition from upcoming to live if match time has started
+    if (match.status === 'upcoming' && now >= start) {
+      return 'live';
+    }
+    
+    // Auto-transition from live to completed if match time has ended
+    if (match.status === 'live' && now > end) {
+      return 'completed';
+    }
+    
+    // Return database status for manual overrides
+    return match.status;
+  }
+  
+  // Fallback to time-based calculation if no database status
   const end = new Date(start.getTime() + durationMinutes * 60000);
   if (now < start) return 'upcoming';
   if (now >= start && now < end) return 'live';
@@ -36,14 +92,19 @@ const MatchCard = ({ match }) => {
       minute: '2-digit'
     });
   };
+  
   const getStatusColor = (status) => {
     switch (status) {
       case 'live': return '#ef4444';
       case 'upcoming': return '#3b82f6';
       case 'completed': return '#10b981';
+      case 'cancelled': return '#64748b';
       default: return '#6b7280';
     }
   };
+  
+  // Use computed status or fallback to getMatchStatus
+  const currentStatus = match.computedStatus || getMatchStatus(match);
   return (
     <div style={{
       background: '#fff',
@@ -83,13 +144,14 @@ const MatchCard = ({ match }) => {
           </span>
           <span style={{
             padding: '4px 8px',
-            background: getStatusColor(match.status),
+            background: getStatusColor(currentStatus),
             borderRadius: '12px',
             fontSize: '12px',
             fontWeight: '500',
-            textTransform: 'capitalize'
+            textTransform: 'capitalize',
+            animation: currentStatus === 'live' ? 'pulse 2s infinite' : 'none'
           }}>
-            {match.status}
+            {currentStatus}
           </span>
         </div>
         <h3 style={{
@@ -118,25 +180,45 @@ const MatchCard = ({ match }) => {
             }}>
               {match.team1.name}
             </h4>
-            {match.status === 'completed' && (
-              <span style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#3b82f6'
-              }}>
-                {match.team1.score}
-              </span>
+            {(currentStatus === 'completed' || currentStatus === 'live') && (
+              <div>
+                {match.sport?.toLowerCase().includes('cricket') ? (
+                  <div>
+                    <span style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: currentStatus === 'live' ? '#ef4444' : '#3b82f6'
+                    }}>
+                      {match.team1?.cricketScore?.runs || match.team1?.score || 0}/{match.team1?.cricketScore?.wickets || 0}
+                    </span>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280'
+                    }}>
+                      ({match.team1?.cricketScore?.overs || 0}.{match.team1?.cricketScore?.balls || 0} overs)
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: currentStatus === 'live' ? '#ef4444' : '#3b82f6'
+                  }}>
+                    {match.team1.score || 0}
+                  </span>
+                )}
+              </div>
             )}
           </div>
           <div style={{
             padding: '8px 16px',
-            background: '#f3f4f6',
+            background: currentStatus === 'live' ? '#ef4444' : '#f3f4f6',
             borderRadius: '8px',
             fontSize: '12px',
             fontWeight: '500',
-            color: '#6b7280'
+            color: currentStatus === 'live' ? '#fff' : '#6b7280'
           }}>
-            VS
+            {currentStatus === 'live' ? 'LIVE' : 'VS'}
           </div>
           <div style={{ textAlign: 'center', flex: 1 }}>
             <h4 style={{
@@ -147,14 +229,34 @@ const MatchCard = ({ match }) => {
             }}>
               {match.team2.name}
             </h4>
-            {match.status === 'completed' && (
-              <span style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#3b82f6'
-              }}>
-                {match.team2.score}
-              </span>
+            {(currentStatus === 'completed' || currentStatus === 'live') && (
+              <div>
+                {match.sport?.toLowerCase().includes('cricket') ? (
+                  <div>
+                    <span style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: currentStatus === 'live' ? '#ef4444' : '#3b82f6'
+                    }}>
+                      {match.team2?.cricketScore?.runs || match.team2?.score || 0}/{match.team2?.cricketScore?.wickets || 0}
+                    </span>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280'
+                    }}>
+                      ({match.team2?.cricketScore?.overs || 0}.{match.team2?.cricketScore?.balls || 0} overs)
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: currentStatus === 'live' ? '#ef4444' : '#3b82f6'
+                  }}>
+                    {match.team2.score || 0}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -182,6 +284,7 @@ const UserMatches = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [analyticsData, setAnalyticsData] = useState([
     {
       icon: Play,
@@ -209,17 +312,41 @@ const UserMatches = () => {
     }
   ]);
 
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
   useEffect(() => {
     const fetchMatches = async () => {
       try {
         const response = await api.get('/matches');
         const matchesData = response.data.matches || response.data;
-        setMatches(matchesData);
-        // Update analytics
-        const liveMatches = matchesData.filter(match => getMatchStatus(match) === 'live').length;
-        const upcomingMatches = matchesData.filter(match => getMatchStatus(match) === 'upcoming').length;
-        const completedMatches = matchesData.filter(match => getMatchStatus(match) === 'completed').length;
-        const totalMatches = matchesData.length;
+        
+        // Process matches to ensure correct status calculation
+        const processedMatches = matchesData.map(match => {
+          const currentStatus = getMatchStatus(match);
+          return {
+            ...match,
+            // Add computed status for frontend use while preserving original
+            computedStatus: currentStatus,
+            status: match.status || currentStatus // Use database status or computed as fallback
+          };
+        });
+        
+        setMatches(processedMatches);
+        setLastUpdated(new Date());
+        
+        // Update analytics based on computed status
+        const liveMatches = processedMatches.filter(match => 
+          (match.computedStatus || getMatchStatus(match)) === 'live'
+        ).length;
+        const upcomingMatches = processedMatches.filter(match => 
+          (match.computedStatus || getMatchStatus(match)) === 'upcoming'
+        ).length;
+        const completedMatches = processedMatches.filter(match => 
+          (match.computedStatus || getMatchStatus(match)) === 'completed'
+        ).length;
+        const totalMatches = processedMatches.length;
+        
         setAnalyticsData(prev => [
           { ...prev[0], count: liveMatches },
           { ...prev[1], count: upcomingMatches },
@@ -228,18 +355,58 @@ const UserMatches = () => {
         ]);
       } catch (error) {
         console.error('Error fetching matches:', error);
+        setError(error.message || 'Failed to fetch matches');
       } finally {
         setLoading(false);
       }
     };
-    fetchMatches();
-    const interval = setInterval(fetchMatches, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
-  const liveMatches = matches.filter(match => getMatchStatus(match) === 'live');
-  const upcomingMatches = matches.filter(match => getMatchStatus(match) === 'upcoming');
-  const completedMatches = matches.filter(match => getMatchStatus(match) === 'completed');
+    fetchMatches();
+    
+    // Auto-refresh every 30 seconds for better performance
+    let interval;
+    if (autoRefresh) {
+      interval = setInterval(fetchMatches, 30000); // 30 seconds
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [autoRefresh]);
+
+  // Filter matches based on computed status with proper search functionality
+  const getFilteredMatches = (matches, status) => {
+    return matches
+      .filter(match => (match.computedStatus || getMatchStatus(match)) === status)
+      .filter(match => {
+        if (!searchTerm) return true;
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          match.title?.toLowerCase().includes(searchLower) ||
+          match.team1?.name?.toLowerCase().includes(searchLower) ||
+          match.team2?.name?.toLowerCase().includes(searchLower) ||
+          match.sport?.toLowerCase().includes(searchLower) ||
+          match.venue?.toLowerCase().includes(searchLower)
+        );
+      })
+      .sort((a, b) => {
+        // Sort by match date
+        if (status === 'upcoming') {
+          // Upcoming: closest first
+          return new Date(a.matchDate) - new Date(b.matchDate);
+        } else if (status === 'live') {
+          // Live: most recent first
+          return new Date(b.matchDate) - new Date(a.matchDate);
+        } else {
+          // Completed: most recent first
+          return new Date(b.matchDate) - new Date(a.matchDate);
+        }
+      });
+  };
+
+  const liveMatches = getFilteredMatches(matches, 'live');
+  const upcomingMatches = getFilteredMatches(matches, 'upcoming');
+  const completedMatches = getFilteredMatches(matches, 'completed');
 
   return (
     <div className="container" style={{ padding: '32px 20px' }}>
@@ -255,6 +422,79 @@ const UserMatches = () => {
           <p className="page-subtitle">
             View all matches, schedules and live scores across all sports
           </p>
+        </div>
+        
+        {/* Refresh controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* Last updated indicator */}
+          {lastUpdated && (
+            <div style={{
+              fontSize: '12px',
+              color: '#6b7280',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                backgroundColor: autoRefresh ? '#10b981' : '#6b7280',
+                borderRadius: '50%',
+                animation: autoRefresh ? 'pulse 3s infinite' : 'none'
+              }}></div>
+              Updated: {lastUpdated.toLocaleTimeString()}
+            </div>
+          )}
+          
+          {/* Manual refresh button */}
+          <button
+            onClick={() => window.location.reload()}
+            disabled={loading}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 12px',
+              fontSize: '12px',
+              fontWeight: '500',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              background: '#fff',
+              color: '#374151',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              opacity: loading ? 0.6 : 1
+            }}
+          >
+            🔄 Refresh
+          </button>
+          
+          {/* Auto-refresh toggle */}
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              fontSize: '12px',
+              fontWeight: '500',
+              border: '1px solid #d1d5db',
+              borderRadius: '6px',
+              background: autoRefresh ? '#10b981' : '#fff',
+              color: autoRefresh ? '#fff' : '#374151',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            <div style={{
+              width: '8px',
+              height: '8px',
+              backgroundColor: autoRefresh ? '#fff' : '#10b981',
+              borderRadius: '50%'
+            }}></div>
+            Auto-refresh {autoRefresh ? 'ON (30s)' : 'OFF'}
+          </button>
         </div>
       </div>
 
@@ -367,6 +607,21 @@ const UserMatches = () => {
         />
       </div>
 
+      {/* Error display */}
+      {error && (
+        <div style={{
+          background: '#fee2e2',
+          border: '1px solid #fecaca',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '20px',
+          color: '#dc2626'
+        }}>
+          <p style={{ margin: 0, fontWeight: '500' }}>Error loading matches</p>
+          <p style={{ margin: '4px 0 0', fontSize: '14px' }}>{error}</p>
+        </div>
+      )}
+
       {/* Tabbed match lists */}
       {activeTab === 'live' && (
         loading ? (
@@ -386,16 +641,9 @@ const UserMatches = () => {
             gap: '20px',
             marginTop: '20px'
           }}>
-            {liveMatches
-              .filter(match => 
-                match.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                match.team1.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .map((match, index) => (
-                <MatchCard key={match._id || index} match={match} />
-              ))
-            }
+            {liveMatches.map((match, index) => (
+              <MatchCard key={match._id || index} match={match} />
+            ))}
           </div>
         )
       )}
@@ -417,16 +665,9 @@ const UserMatches = () => {
             gap: '20px',
             marginTop: '20px'
           }}>
-            {upcomingMatches
-              .filter(match => 
-                match.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                match.team1.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .map((match, index) => (
-                <MatchCard key={match._id || index} match={match} />
-              ))
-            }
+            {upcomingMatches.map((match, index) => (
+              <MatchCard key={match._id || index} match={match} />
+            ))}
           </div>
         )
       )}
@@ -448,16 +689,9 @@ const UserMatches = () => {
             gap: '20px',
             marginTop: '20px'
           }}>
-            {completedMatches
-              .filter(match => 
-                match.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                match.team1.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
-              )
-              .map((match, index) => (
-                <MatchCard key={match._id || index} match={match} />
-              ))
-            }
+            {completedMatches.map((match, index) => (
+              <MatchCard key={match._id || index} match={match} />
+            ))}
           </div>
         )
       )}

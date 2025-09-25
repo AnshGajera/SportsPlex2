@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Megaphone, AlertCircle, Info, Star } from 'lucide-react';
 
-const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
+const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit, initialData = null, mode = 'create' }) => {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -13,6 +13,34 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
     isUrgent: false,
     allowComments: true
   });
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        title: initialData.title || '',
+        content: initialData.content || '',
+        type: initialData.type || 'general',
+        priority: initialData.priority || 'medium',
+        category: initialData.category || '',
+        targetAudience: initialData.targetAudience || 'all',
+        expiryDate: initialData.expiryDate ? new Date(initialData.expiryDate).toISOString().split('T')[0] : '',
+        isUrgent: !!initialData.isUrgent,
+        allowComments: initialData.allowComments !== undefined ? !!initialData.allowComments : true
+      });
+    } else {
+      setFormData({
+        title: '',
+        content: '',
+        type: '',
+        priority: 'medium',
+        category: '',
+        targetAudience: 'all',
+        expiryDate: '',
+        isUrgent: false,
+        allowComments: true
+      });
+    }
+  }, [initialData, isOpen]);
 
   const announcementTypes = [
     { value: 'general', label: 'General', icon: Megaphone },
@@ -57,18 +85,19 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    // Reset form
-    setFormData({
-      title: '',
-      content: '',
-      type: '',
-      priority: 'medium',
-      category: '',
-      targetAudience: 'all',
-      expiryDate: '',
-      isUrgent: false,
-      allowComments: true
-    });
+    if (mode === 'create') {
+      setFormData({
+        title: '',
+        content: '',
+        type: '',
+        priority: 'medium',
+        category: '',
+        targetAudience: 'all',
+        expiryDate: '',
+        isUrgent: false,
+        allowComments: true
+      });
+    }
     onClose();
   };
 
@@ -88,14 +117,11 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
               <Megaphone size={20} className="text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Create Announcement</h2>
+              <h2 className="text-xl font-semibold text-gray-900">{mode === 'edit' ? 'Edit Announcement' : 'Create Announcement'}</h2>
               <p className="text-sm text-gray-500">Share important information with users</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={24} />
           </button>
         </div>
@@ -319,7 +345,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, onSubmit }) => {
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              {formData.isUrgent ? 'Publish Urgent' : 'Create Announcement'}
+              {mode === 'edit' ? 'Save Changes' : (formData.isUrgent ? 'Publish Urgent' : 'Create Announcement')}
             </button>
           </div>
         </form>

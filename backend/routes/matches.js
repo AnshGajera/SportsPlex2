@@ -3,6 +3,7 @@ const Match = require('../models/match');
 const Club = require('../models/club');
 const { protect: authMiddleware } = require('../middleware/authMiddleware');
 const User = require('../models/user');
+const matchController = require('../controllers/matchController');
 
 const router = express.Router();
 
@@ -237,6 +238,24 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Server error while deleting match' });
   }
 });
+
+// PUT /api/matches/:id/live-score - Update live score (Admin/Student Head only)
+router.put('/:id/live-score', (req, res, next) => {
+  console.log('🚀 Live score route hit! Match ID:', req.params.id);
+  next();
+}, authMiddleware, adminOrStudentHeadMiddleware, matchController.updateLiveScore);
+
+// PUT /api/matches/:id/status - Update match status (Admin/Student Head only)
+router.put('/:id/status', authMiddleware, adminOrStudentHeadMiddleware, matchController.updateMatchStatus);
+
+// GET /api/matches/:id/live-updates - Get live updates history (Admin/Student Head only)
+router.get('/:id/live-updates', authMiddleware, adminOrStudentHeadMiddleware, matchController.getLiveUpdatesHistory);
+
+// PUT /api/matches/:id/toss - Record toss result (Admin/Student Head only)
+router.put('/:id/toss', authMiddleware, adminOrStudentHeadMiddleware, matchController.recordToss);
+
+// PUT /api/matches/:id/switch-innings - Switch innings for cricket (Admin/Student Head only)
+router.put('/:id/switch-innings', authMiddleware, adminOrStudentHeadMiddleware, matchController.switchInnings);
 
 // GET /api/matches/analytics/stats - Get match analytics (Admin only)
 router.get('/analytics/stats', authMiddleware, async (req, res) => {

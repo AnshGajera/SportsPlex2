@@ -44,6 +44,10 @@ app.use('/api/equipment-working', (req, res, next) => {
   console.log('🔎 /api/equipment-working route hit');
   next();
 }, require('./routes/equipment_working'));
+app.use('/api/announcements', (req, res, next) => {
+  console.log('🔔 /api/announcements route hit:', req.method, req.path);
+  next();
+}, require('./routes/announcements'));
 app.use('/api/student-head-requests', studentHeadRequestRoutes);
 
 const uri = 'mongodb+srv://yashcoltd:pixmamg2576@charusatcomplex.qcqgdez.mongodb.net/?retryWrites=true&w=majority&appName=charusatComplex';

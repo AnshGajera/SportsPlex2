@@ -14,6 +14,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import AdminEquipment from './pages/AdminEquipment';
 import AdminClubs from './pages/AdminClubs';
 import AdminMatches from './pages/AdminMatches';
+import LiveScoreUpdate from './pages/LiveScoreUpdate';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminUserManagement from './pages/AdminUserManagement';
@@ -75,8 +76,9 @@ function App() {
           <Route path="/admin/clubs/:id" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminClubDetail /></ProtectedRoute></>} />
           <Route path="/admin/user-profile/:userId" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminUserProfile /></ProtectedRoute></>} />
           <Route path="/admin/matches" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminMatches /></ProtectedRoute></>} />
+          <Route path="/admin/live-score/:matchId" element={<><Navbar /><ProtectedRoute allowedRoles={['admin', 'student_head']}><LiveScoreUpdate /></ProtectedRoute></>} />
           <Route path="/admin/events" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminEvents /></ProtectedRoute></>} />
-          <Route path="/admin/announcements" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminAnnouncements /></ProtectedRoute></>} />
+          <Route path="/admin/announcements" element={<><Navbar /><ProtectedRoute allowedRoles={['admin', 'student_head']}><AdminAnnouncements /></ProtectedRoute></>} />
           <Route path="/admin/analytics" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminAnalytics /></ProtectedRoute></>} />
           <Route path="/admin/user-management" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminUserManagement /></ProtectedRoute></>} />
           <Route path="/admin/profile" element={<><Navbar /><ProtectedRoute adminOnly={true}><AdminProfile /></ProtectedRoute></>} />
