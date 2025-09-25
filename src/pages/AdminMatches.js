@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Plus, Play, Calendar, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Trophy, Plus, Play, Calendar, CheckCircle, Activity, Edit3 } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import ScheduleMatchModal from '../components/Modals/ScheduleMatchModal';
 import api from '../services/api';
 
 const AdminMatches = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -93,6 +95,10 @@ const AdminMatches = () => {
       prev[2], // Completed unchanged
       { ...prev[3], count: prev[3].count + 1 }  // Total +1
     ]);
+  };
+
+  const navigateToLiveScore = (match) => {
+    navigate(`/admin/live-score/${match._id}`);
   };
 
   const EmptyState = ({ icon: Icon, title, description, actionButton }) => (
@@ -292,7 +298,12 @@ const AdminMatches = () => {
                 match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
               )
               .map((match, index) => (
-                <MatchCard key={match._id || index} match={match} />
+                <MatchCard 
+                  key={match._id || index} 
+                  match={match} 
+                  onUpdateLiveScore={() => navigateToLiveScore(match)}
+                  showUpdateButton={true}
+                />
               ))
             }
           </div>
@@ -332,7 +343,12 @@ const AdminMatches = () => {
                 match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
               )
               .map((match, index) => (
-                <MatchCard key={match._id || index} match={match} />
+                <MatchCard 
+                  key={match._id || index} 
+                  match={match} 
+                  onUpdateLiveScore={() => navigateToLiveScore(match)}
+                  showUpdateButton={true}
+                />
               ))
             }
           </div>
@@ -364,7 +380,12 @@ const AdminMatches = () => {
                 match.team2.name.toLowerCase().includes(searchTerm.toLowerCase())
               )
               .map((match, index) => (
-                <MatchCard key={match._id || index} match={match} />
+                <MatchCard 
+                  key={match._id || index} 
+                  match={match} 
+                  onUpdateLiveScore={() => navigateToLiveScore(match)}
+                  showUpdateButton={true}
+                />
               ))
             }
           </div>
@@ -383,7 +404,7 @@ const AdminMatches = () => {
 };
 
 // MatchCard component
-const MatchCard = ({ match }) => {
+const MatchCard = ({ match, onUpdateLiveScore, showUpdateButton = false }) => {
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -478,26 +499,46 @@ const MatchCard = ({ match }) => {
             }}>
               {match.team1.name}
             </h4>
-            {match.status === 'completed' && (
-              <span style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#3b82f6'
-              }}>
-                {match.team1.score}
-              </span>
+            {(match.status === 'completed' || match.status === 'live') && (
+              <div>
+                {match.sport?.toLowerCase().includes('cricket') ? (
+                  <div>
+                    <span style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: match.status === 'live' ? '#ef4444' : '#3b82f6'
+                    }}>
+                      {match.team1?.cricketScore?.runs || match.team1?.score || 0}/{match.team1?.cricketScore?.wickets || 0}
+                    </span>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280'
+                    }}>
+                      ({match.team1?.cricketScore?.overs || 0}.{match.team1?.cricketScore?.balls || 0} overs)
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: match.status === 'live' ? '#ef4444' : '#3b82f6'
+                  }}>
+                    {match.team1.score || 0}
+                  </span>
+                )}
+              </div>
             )}
           </div>
           
           <div style={{
             padding: '8px 16px',
-            background: '#f3f4f6',
+            background: match.status === 'live' ? '#ef4444' : '#f3f4f6',
             borderRadius: '8px',
             fontSize: '12px',
             fontWeight: '500',
-            color: '#6b7280'
+            color: match.status === 'live' ? '#fff' : '#6b7280'
           }}>
-            VS
+            {match.status === 'live' ? 'LIVE' : 'VS'}
           </div>
           
           <div style={{ textAlign: 'center', flex: 1 }}>
@@ -509,14 +550,34 @@ const MatchCard = ({ match }) => {
             }}>
               {match.team2.name}
             </h4>
-            {match.status === 'completed' && (
-              <span style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#3b82f6'
-              }}>
-                {match.team2.score}
-              </span>
+            {(match.status === 'completed' || match.status === 'live') && (
+              <div>
+                {match.sport?.toLowerCase().includes('cricket') ? (
+                  <div>
+                    <span style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: match.status === 'live' ? '#ef4444' : '#3b82f6'
+                    }}>
+                      {match.team2?.cricketScore?.runs || match.team2?.score || 0}/{match.team2?.cricketScore?.wickets || 0}
+                    </span>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280'
+                    }}>
+                      ({match.team2?.cricketScore?.overs || 0}.{match.team2?.cricketScore?.balls || 0} overs)
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: match.status === 'live' ? '#ef4444' : '#3b82f6'
+                  }}>
+                    {match.team2.score || 0}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -531,9 +592,60 @@ const MatchCard = ({ match }) => {
           <div style={{ marginBottom: '4px' }}>
             📅 {formatDate(match.matchDate)}
           </div>
-          <div>
+          <div style={{ marginBottom: showUpdateButton ? '12px' : '0' }}>
             📍 {match.venue}
           </div>
+          
+          {/* Live Score Update Button */}
+          {showUpdateButton && (
+            <div style={{
+              borderTop: '1px solid #e5e7eb',
+              paddingTop: '12px',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={onUpdateLiveScore}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  backgroundColor: match.status === 'live' ? '#ef4444' : '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+                onMouseEnter={e => {
+                  e.target.style.backgroundColor = match.status === 'live' ? '#dc2626' : '#2563eb';
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.target.style.backgroundColor = match.status === 'live' ? '#ef4444' : '#3b82f6';
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                }}
+              >
+                {match.status === 'live' ? (
+                  <>
+                    <Activity size={14} />
+                    Update Live Score
+                  </>
+                ) : (
+                  <>
+                    <Edit3 size={14} />
+                    {match.status === 'upcoming' ? 'Start Match' : 'Edit Score'}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

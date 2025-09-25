@@ -118,25 +118,45 @@ const MatchCard = ({ match }) => {
             }}>
               {match.team1.name}
             </h4>
-            {match.status === 'completed' && (
-              <span style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#3b82f6'
-              }}>
-                {match.team1.score}
-              </span>
+            {(match.status === 'completed' || match.status === 'live') && (
+              <div>
+                {match.sport?.toLowerCase().includes('cricket') ? (
+                  <div>
+                    <span style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: match.status === 'live' ? '#ef4444' : '#3b82f6'
+                    }}>
+                      {match.team1?.cricketScore?.runs || match.team1?.score || 0}/{match.team1?.cricketScore?.wickets || 0}
+                    </span>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280'
+                    }}>
+                      ({match.team1?.cricketScore?.overs || 0}.{match.team1?.cricketScore?.balls || 0} overs)
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: match.status === 'live' ? '#ef4444' : '#3b82f6'
+                  }}>
+                    {match.team1.score || 0}
+                  </span>
+                )}
+              </div>
             )}
           </div>
           <div style={{
             padding: '8px 16px',
-            background: '#f3f4f6',
+            background: match.status === 'live' ? '#ef4444' : '#f3f4f6',
             borderRadius: '8px',
             fontSize: '12px',
             fontWeight: '500',
-            color: '#6b7280'
+            color: match.status === 'live' ? '#fff' : '#6b7280'
           }}>
-            VS
+            {match.status === 'live' ? 'LIVE' : 'VS'}
           </div>
           <div style={{ textAlign: 'center', flex: 1 }}>
             <h4 style={{
@@ -147,14 +167,34 @@ const MatchCard = ({ match }) => {
             }}>
               {match.team2.name}
             </h4>
-            {match.status === 'completed' && (
-              <span style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#3b82f6'
-              }}>
-                {match.team2.score}
-              </span>
+            {(match.status === 'completed' || match.status === 'live') && (
+              <div>
+                {match.sport?.toLowerCase().includes('cricket') ? (
+                  <div>
+                    <span style={{
+                      fontSize: '24px',
+                      fontWeight: '700',
+                      color: match.status === 'live' ? '#ef4444' : '#3b82f6'
+                    }}>
+                      {match.team2?.cricketScore?.runs || match.team2?.score || 0}/{match.team2?.cricketScore?.wickets || 0}
+                    </span>
+                    <div style={{
+                      fontSize: '12px',
+                      color: '#6b7280'
+                    }}>
+                      ({match.team2?.cricketScore?.overs || 0}.{match.team2?.cricketScore?.balls || 0} overs)
+                    </div>
+                  </div>
+                ) : (
+                  <span style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: match.status === 'live' ? '#ef4444' : '#3b82f6'
+                  }}>
+                    {match.team2.score || 0}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -87,5 +87,56 @@ const sendPromotionEmail = async (userEmail, userName) => {
 };
 
 module.exports = {
-  sendPromotionEmail
+  sendPromotionEmail,
+  sendAnnouncementEmail: async (userEmail, title, content) => {
+    try {
+      const subject = 'New SportsPlex Announcement';
+      const emailData = {
+        to: userEmail,
+        subject,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 16px;">
+              <h1 style="color: white; margin: 0; font-size: 22px; font-weight: bold;">New SportsPlex Announcement</h1>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);">
+              <h2 style="color: #111827; margin: 0 0 12px 0; font-size: 18px;">${title}</h2>
+              <p style="color: #374151; line-height: 1.6; font-size: 14px; white-space: pre-wrap;">${content}</p>
+              <div style="text-align: center; margin-top: 20px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/user/announcements" 
+                   style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block; font-size: 14px;">
+                  View Announcements
+                </a>
+              </div>
+            </div>
+            <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 12px;">This is an automated message. Please do not reply.</p>
+          </div>
+        `
+      };
+
+      console.log('=== ANNOUNCEMENT EMAIL SIMULATION ===');
+      console.log('To:', emailData.to);
+      console.log('Subject:', emailData.subject);
+      console.log('Title:', title);
+      console.log('✅ Email would be sent in production environment');
+
+      return { success: true, message: 'Announcement email sent (simulated)', emailData };
+    } catch (error) {
+      console.error('Error preparing announcement email:', error);
+      return { success: false, message: 'Failed to prepare announcement email', error: error.message };
+    }
+  },
+  sendAnnouncementEmailToAllUsers: async ({ title, content }) => {
+    try {
+      const User = require('../models/user');
+      const users = await User.find({}, 'email firstName lastName').lean();
+      for (const u of users) {
+        await module.exports.sendAnnouncementEmail(u.email, title, content);
+      }
+      return { success: true, count: users.length };
+    } catch (error) {
+      console.error('Error broadcasting announcement emails:', error);
+      return { success: false, message: error.message };
+    }
+  }
 };
