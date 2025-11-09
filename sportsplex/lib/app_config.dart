@@ -2,7 +2,7 @@ import 'dart:io';
 
 class AppConfig {
   // Use the correct IP address for mobile device connection
-  static const String baseUrl = 'http://192.168.43.154:5000';
+  static const String baseUrl = 'http://192.168.1.35:5000';
 
   // Alternative: Environment-based configuration  
   static const String _developmentUrl = 'http://192.168.43.154:5000';

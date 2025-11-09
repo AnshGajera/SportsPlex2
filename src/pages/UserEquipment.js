@@ -128,7 +128,6 @@ const UserEquipment = () => {
       
       setRequestModalOpen(false);
       setRequestEquipment(null);
-      setRequestDuration('');
       setRequestPurpose('');
       setRequestQuantity(1);
       setRequestStartDate(dayjs());

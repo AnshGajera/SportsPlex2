@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Filter, Package, Clock, CheckCircle, XCircle, Plus, Users, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Search, Filter, Package, Clock, CheckCircle, XCircle, Plus, Users, AlertTriangle, BarChart3, User, Mail, Calendar } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import AddEquipmentModal from '../components/Modals/AddEquipmentModal';
 import { AdminBookingTable, BookingTimelineView } from '../components/Bookings';
@@ -479,26 +479,41 @@ const AdminEquipment = () => {
     // ...existing code...
     const submitEquipment = async () => {
       try {
+        console.log('📤 Submitting equipment data:', equipmentData);
         const formData = new FormData();
         Object.entries(equipmentData).forEach(([key, value]) => {
+          console.log(`Adding to FormData: ${key} = ${value}`);
           if (key === 'image' && value) {
             formData.append(key, value);
           } else if (key !== 'imagePreview') {
             formData.append(key, value);
           }
         });
-        await api.post('/equipment', formData, {
+        
+        console.log('📤 Sending POST request to /equipment');
+        const response = await api.post('/equipment', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         });
         
+        console.log('✅ Equipment added successfully:', response.data);
+        
         // Refresh data
-        fetchEquipment();
-        fetchAnalytics();
+        await fetchEquipment();
+        await fetchAnalytics();
         setIsAddModalOpen(false);
+        
+        // Show success message (you can add a toast notification here)
+        alert('Equipment added successfully!');
+        
       } catch (error) {
-        console.error('Error adding equipment:', error);
+        console.error('❌ Error adding equipment:', error);
+        console.error('Error details:', error.response?.data);
+        
+        // Show error message to user
+        const errorMessage = error.response?.data?.error || 'Failed to add equipment. Please try again.';
+        alert(`Error: ${errorMessage}`);
       }
     };
     submitEquipment();
@@ -516,11 +531,21 @@ const AdminEquipment = () => {
     if (window.confirm('Are you sure you want to delete this equipment?')) {
       const deleteEquipment = async () => {
         try {
-          await api.delete(`/equipment/${equipmentId}`);
-          const response = await api.get('/equipment');
-          setEquipmentList(response.data);
+          console.log('🗑️ Deleting equipment with ID:', equipmentId);
+          const deleteResponse = await api.delete(`/equipment/${equipmentId}`);
+          console.log('✅ Delete response:', deleteResponse.data);
+          
+          // Refresh equipment list
+          await fetchEquipment();
+          await fetchAnalytics();
+          
+          alert('Equipment deleted successfully!');
         } catch (error) {
-          console.error('Error deleting equipment:', error);
+          console.error('❌ Error deleting equipment:', error);
+          console.error('Error details:', error.response?.data);
+          
+          const errorMessage = error.response?.data?.error || 'Failed to delete equipment. Please try again.';
+          alert(`Error: ${errorMessage}`);
         }
       };
       deleteEquipment();

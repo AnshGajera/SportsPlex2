@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const equipmentController = require('../controllers/equipmentController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
+const equipmentUpload = require('../middleware/equipmentUpload');
 const EquipmentAllocation = require('../models/equipmentAllocation');
 const EquipmentRequest = require('../models/equipmentRequest');
 const Equipment = require('../models/equipment');
@@ -20,12 +21,23 @@ router.get('/test', (req, res) => {
   res.json({ message: 'Equipment routes are working!' });
 });
 
+// Get all equipment (admin access) - Must be BEFORE specific routes
+router.get('/', protect, equipmentController.getAllEquipment);
+
 // Public equipment list (for mobile app without authentication)
 router.get('/public', async (req, res) => {
   try {
     console.log('📱 Public equipment route hit for mobile app');
-    const equipment = await Equipment.find().select('name description quantity category');
+    const equipment = await Equipment.find().select('name description quantity category condition location image');
     console.log(`📦 Found ${equipment.length} equipment items`);
+    
+    // Debug: Log equipment with image info
+    console.log('=== EQUIPMENT WITH IMAGES ===');
+    equipment.forEach(item => {
+      console.log(`${item.name}: image="${item.image}"`);
+    });
+    console.log('=============================');
+    
     res.json(equipment);
   } catch (error) {
     console.error('❌ Error fetching public equipment:', error);
@@ -60,6 +72,15 @@ router.get('/admin-test', protect, isAdmin, (req, res) => {
     }
   });
 });
+
+// Add new equipment (admin only)
+router.post('/', protect, isAdmin, equipmentUpload.single('image'), equipmentController.addEquipment);
+
+// Update equipment (admin only) 
+router.put('/:id', protect, isAdmin, equipmentUpload.single('image'), equipmentController.updateEquipment);
+
+// Delete equipment (admin only)
+router.delete('/:id', protect, isAdmin, equipmentController.deleteEquipment);
 
 // Admin: Return equipment and update quantities
 router.post('/return/:allocationId', protect, isAdmin, async (req, res) => {
@@ -739,6 +760,74 @@ router.patch('/allocations/:allocationId/extend', protect, isAdmin, async (req, 
   } catch (error) {
     console.error('❌ Error extending allocation:', error);
     res.status(500).json({ error: 'Failed to extend booking' });
+  }
+});
+
+// Allocate approved equipment to user (admin only)
+router.post('/allocate/:requestId', protect, isAdmin, async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { expectedReturnDate, notes } = req.body;
+    
+    console.log('🔗 POST /allocate/:requestId - RequestId:', requestId);
+    console.log('🔗 Body:', req.body);
+    
+    const request = await EquipmentRequest.findById(requestId)
+      .populate('equipment')
+      .populate('requester');
+    
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    
+    if (request.status !== 'approved') {
+      return res.status(400).json({ error: 'Request must be approved before allocation' });
+    }
+    
+    const equipment = request.equipment;
+    
+    // Check availability again
+    if (equipment.availableQuantity < request.quantityRequested) {
+      return res.status(400).json({ error: 'Insufficient equipment quantity' });
+    }
+    
+    // Create allocation record
+    const allocation = new EquipmentAllocation({
+      equipment: equipment._id,
+      allocatedTo: request.requester._id,
+      request: request._id,
+      quantityAllocated: request.quantityRequested,
+      expectedReturnDate: new Date(expectedReturnDate),
+      allocatedBy: req.user._id,
+      allocationDate: new Date(),
+      status: 'allocated'
+    });
+    
+    await allocation.save();
+    
+    // Update equipment quantities
+    equipment.allocatedQuantity = (equipment.allocatedQuantity || 0) + request.quantityRequested;
+    equipment.reservedQuantity = (equipment.reservedQuantity || 0) - request.quantityRequested;
+    await equipment.save();
+    
+    // Update request status
+    request.status = 'allocated';
+    await request.save();
+    
+    const populatedAllocation = await EquipmentAllocation.findById(allocation._id)
+      .populate('equipment', 'name category')
+      .populate('allocatedTo', 'firstName lastName email')
+      .populate('allocatedBy', 'firstName lastName');
+    
+    console.log('✅ Equipment allocated successfully:', populatedAllocation);
+    
+    res.json({
+      message: 'Equipment allocated successfully',
+      allocation: populatedAllocation
+    });
+  } catch (error) {
+    console.error('❌ Error allocating equipment:', error);
+    res.status(500).json({ error: 'Failed to allocate equipment' });
   }
 });
 
