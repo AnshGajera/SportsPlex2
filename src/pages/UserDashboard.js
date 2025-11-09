@@ -8,11 +8,22 @@ const UserDashboard = () => {
   const { currentUser } = useAuth();
   const [canRequestStudentHead, setCanRequestStudentHead] = useState(false);
   const [hasRequestedStudentHead, setHasRequestedStudentHead] = useState(false);
-  
-  console.log('Current user data:', currentUser); // Add logging to debug
+  const [announcementCount, setAnnouncementCount] = useState(0);
+
   const firstName = currentUser?.firstName || '';
   const lastName = currentUser?.lastName || '';
   const userName = currentUser ? `${firstName} ${lastName}`.trim() || 'User' : 'User';
+
+  // Fetch announcement count
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get('/announcements/analytics');
+        setAnnouncementCount(res.data?.data?.total || 0);
+      } catch {}
+    };
+    load();
+  }, []);
 
   // Check if user can request student head role
   useEffect(() => {
@@ -64,7 +75,7 @@ const UserDashboard = () => {
     },
     { 
       icon: Bell, 
-      count: 0, 
+      count: announcementCount, 
       label: 'New Announcements',
       color: '#8b5cf6'
     }

@@ -88,9 +88,16 @@ const Login = () => {
         setMessage('Login successful! Redirecting...');
         // Log the response data to verify user information
         console.log('Login response data:', response.data);
-        // Update context and local storage
+        
+        // Store both user info and auth token
         setCurrentUser(response.data);
         localStorage.setItem('userInfo', JSON.stringify(response.data));
+        
+        // Store the JWT token separately for API calls
+        if (response.data.token) {
+          localStorage.setItem('authToken', response.data.token);
+        }
+        
         // Redirect based on role
         if (response.data.role === 'admin') {
           navigate('/admin', { replace: true });

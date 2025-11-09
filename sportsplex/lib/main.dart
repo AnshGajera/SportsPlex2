@@ -47,7 +47,10 @@ class SportsPlexApp extends StatelessWidget {
           final args =
               ModalRoute.of(context)!.settings.arguments
                   as Map<String, dynamic>?;
-          return StudentEquipment(userId: args?['userId'] ?? '');
+          return StudentEquipment(
+            userId: args?['userId'] ?? '',
+            token: args?['token'],
+          );
         },
         '/joinClubs': (context) {
           final args =

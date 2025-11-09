@@ -149,3 +149,51 @@ exports.deleteEquipment = async (req, res) => {
     res.status(500).json({ error: 'Failed to delete equipment.' });
   }
 };
+
+// Get equipment with current booking information
+exports.getEquipmentWithBookings = async (req, res) => {
+  try {
+    const EquipmentAllocation = require('../models/equipmentAllocation');
+    
+    const equipment = await Equipment.find({ isActive: true });
+    const activeAllocations = await EquipmentAllocation.find({
+      status: 'allocated'
+    }).populate('allocatedTo', 'firstName lastName');
+
+    // Create a map of equipment bookings
+    const bookingMap = {};
+    activeAllocations.forEach(allocation => {
+      const equipId = allocation.equipment.toString();
+      if (!bookingMap[equipId]) {
+        bookingMap[equipId] = [];
+      }
+      bookingMap[equipId].push({
+        quantity: allocation.quantityAllocated,
+        allocatedDate: allocation.allocationDate,
+        expectedReturnDate: allocation.expectedReturnDate,
+        allocatedToInitials: `${allocation.allocatedTo.firstName[0]}${allocation.allocatedTo.lastName[0]}`,
+        daysRemaining: Math.ceil((new Date(allocation.expectedReturnDate) - new Date()) / (1000 * 60 * 60 * 24))
+      });
+    });
+
+    // Combine equipment with booking info
+    const equipmentWithBookings = equipment.map(item => {
+      const currentBookings = bookingMap[item._id.toString()] || [];
+      const totalAllocated = currentBookings.reduce((sum, booking) => sum + booking.quantity, 0);
+      
+      return {
+        ...item.toObject(),
+        currentBookings,
+        hasActiveBookings: currentBookings.length > 0,
+        totalActiveBookings: currentBookings.length,
+        totalAllocatedQuantity: totalAllocated,
+        actualAvailableQuantity: item.quantity - totalAllocated
+      };
+    });
+
+    res.json(equipmentWithBookings);
+  } catch (err) {
+    console.error('Get Equipment with Bookings Error:', err);
+    res.status(500).json({ error: 'Failed to fetch equipment with booking status.' });
+  }
+};

@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../firebase/config';
 
-const ProtectedRoute = ({ children, adminOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, allowedRoles = null }) => {
   const { currentUser, loading } = useAuth();
   const [verified, setVerified] = useState(null);
 
@@ -27,9 +27,16 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   if (!verified) {
     return <Navigate to="/verifyEmail" replace />;
   }
+  
+  // Check role-based access
   if (adminOnly && currentUser.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
+  
+  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+    return <Navigate to="/" replace />;
+  }
+  
   return children;
 };
 

@@ -17,6 +17,10 @@ const equipmentRequestSchema = new mongoose.Schema({
     default: 1,
     min: 1
   },
+  requestStartDate: {
+    type: Date,
+    required: true
+  },
   expectedReturnDate: {
     type: Date,
     required: true

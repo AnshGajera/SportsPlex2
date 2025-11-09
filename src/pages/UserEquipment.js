@@ -3,7 +3,7 @@ import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { Package, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import SearchBar from '../components/SearchBar';
 import api from '../services/api';
 
@@ -11,35 +11,127 @@ const UserEquipment = () => {
   // Request modal state
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [requestEquipment, setRequestEquipment] = useState(null);
-  const [requestDuration, setRequestDuration] = useState('');
+  const [requestStartDate, setRequestStartDate] = useState(dayjs()); // Default to current date/time
+  const [expectedReturnDate, setExpectedReturnDate] = useState(null);
   const [requestPurpose, setRequestPurpose] = useState('');
   const [requestQuantity, setRequestQuantity] = useState(1);
-  const [expectedReturnDate, setExpectedReturnDate] = useState('');
+  
+  // Equipment availability state
+  const [equipmentAllocations, setEquipmentAllocations] = useState({});
+  const [loadingAllocations, setLoadingAllocations] = useState(false);
 
-  const handleRequestClick = (equipment) => {
+  const handleRequestClick = async (equipment) => {
     setRequestEquipment(equipment);
     setRequestModalOpen(true);
+    
+    // Fetch allocation data to show blocked times in calendar
+    await fetchEquipmentAllocations(equipment._id);
+  };
+
+  const fetchEquipmentAllocations = async (equipmentId) => {
+    try {
+      setLoadingAllocations(true);
+      const response = await api.get(`/equipment/availability/${equipmentId}`);
+      
+      setEquipmentAllocations(prev => ({
+        ...prev,
+        [equipmentId]: response.data
+      }));
+    } catch (error) {
+      console.error('Error fetching equipment allocations:', error);
+    } finally {
+      setLoadingAllocations(false);
+    }
+  };
+
+  // Function to check if a date/time is blocked for selected equipment
+  const isDateTimeBlocked = (dateTime, equipmentId) => {
+    const allocations = equipmentAllocations[equipmentId];
+    if (!allocations || !allocations.currentAllocations) return false;
+
+    const selectedDate = dayjs(dateTime);
+    
+    return allocations.currentAllocations.some(allocation => {
+      const allocationStart = dayjs(allocation.allocationDate);
+      const allocationEnd = dayjs(allocation.expectedReturnDate);
+      
+      return selectedDate.isBetween(allocationStart, allocationEnd, null, '[]');
+    });
+  };
+
+  // Function to check if a date range overlaps with existing allocations
+  const isDateRangeBlocked = (startDate, endDate, equipmentId) => {
+    const allocations = equipmentAllocations[equipmentId];
+    if (!allocations || !allocations.currentAllocations) return false;
+
+    const requestStart = dayjs(startDate);
+    const requestEnd = dayjs(endDate);
+    
+    return allocations.currentAllocations.some(allocation => {
+      const allocationStart = dayjs(allocation.allocationDate);
+      const allocationEnd = dayjs(allocation.expectedReturnDate);
+      
+      // Check if ranges overlap
+      return requestStart.isBefore(allocationEnd) && requestEnd.isAfter(allocationStart);
+    });
+  };
+
+  // Function to get availability percentage for equipment
+  const getAvailabilityInfo = (equipmentId) => {
+    const allocations = equipmentAllocations[equipmentId];
+    if (!allocations) return null;
+
+    const { totalQuantity, availableQuantity, allocatedQuantity } = allocations.availabilityStats;
+    const availabilityPercentage = totalQuantity > 0 ? Math.round((availableQuantity / totalQuantity) * 100) : 0;
+    
+    return {
+      availableQuantity,
+      totalQuantity,
+      allocatedQuantity,
+      availabilityPercentage,
+      isFullyBooked: availableQuantity === 0
+    };
   };
 
   const handleSubmitRequest = async () => {
     try {
-      if (!requestDuration.trim()) {
-        alert('Please enter duration');
+      if (!requestStartDate) {
+        alert('Please select a start date and time');
+        return;
+      }
+      if (!expectedReturnDate) {
+        alert('Please select a return date and time');
+        return;
+      }
+      if (requestStartDate.isAfter(dayjs(expectedReturnDate))) {
+        alert('Start date cannot be after return date');
+        return;
+      }
+      if (requestStartDate.isBefore(dayjs())) {
+        alert('Start date cannot be in the past');
+        return;
+      }
+      
+      // Check for date range conflicts
+      if (requestEquipment && isDateRangeBlocked(requestStartDate, expectedReturnDate, requestEquipment._id)) {
+        alert('The selected date range conflicts with existing bookings. Please choose different dates.');
         return;
       }
       
       await api.post('/equipment/request', {
         equipmentId: requestEquipment._id,
-        duration: requestDuration,
+        requestStartDate: requestStartDate.format(),
+        expectedReturnDate: dayjs(expectedReturnDate).format(),
         quantityRequested: requestQuantity,
         purpose: requestPurpose
       });
       
       setRequestModalOpen(false);
       setRequestEquipment(null);
-      setRequestDuration('');
       setRequestPurpose('');
       setRequestQuantity(1);
+      setRequestStartDate(dayjs());
+      setExpectedReturnDate(null);
       alert('Request sent to admin successfully!');
       
       // Refresh data
@@ -138,6 +230,15 @@ const UserEquipment = () => {
     fetchMyAllocations();
     fetchAnalytics();
   }, []);
+
+  // Load allocations for all equipment when equipment list changes
+  useEffect(() => {
+    if (equipmentList.length > 0) {
+      equipmentList.forEach(equipment => {
+        fetchEquipmentAllocations(equipment._id);
+      });
+    }
+  }, [equipmentList]);
 
   // Filter equipment based on search and category
   const filteredEquipment = equipmentList.filter(equipment => {
@@ -355,11 +456,104 @@ const UserEquipment = () => {
               marginTop: '20px'
             }}>
               {filteredEquipment.map((equipment, index) => (
-                <EquipmentCard
-                  key={equipment._id || index}
-                  equipment={equipment}
-                  onRequest={handleRequestClick}
-                />
+                <div
+                  key={index}
+                  className="card"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <h3
+                      style={{
+                        fontSize: '1.125rem',
+                        fontWeight: '600',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      {equipment.name}
+                    </h3>
+                    <p style={{ color: '#64748b', marginBottom: '8px' }}>
+                      Category: {equipment.category}
+                    </p>
+                    {(() => {
+                      const availabilityInfo = getAvailabilityInfo(equipment._id);
+                      return (
+                        <>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            marginBottom: '8px' 
+                          }}>
+                            <p style={{ color: '#64748b' }}>
+                              Available: {equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity} / {equipment.quantity}
+                            </p>
+                            {availabilityInfo && (
+                              <div style={{
+                                padding: '2px 8px',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                backgroundColor: availabilityInfo.isFullyBooked ? '#fee2e2' : availabilityInfo.availabilityPercentage > 50 ? '#dcfce7' : '#fef3c7',
+                                color: availabilityInfo.isFullyBooked ? '#dc2626' : availabilityInfo.availabilityPercentage > 50 ? '#16a34a' : '#d97706'
+                              }}>
+                                {availabilityInfo.isFullyBooked ? 'Fully Booked' : `${availabilityInfo.availabilityPercentage}% Available`}
+                              </div>
+                            )}
+                          </div>
+                          <p style={{ color: '#64748b', marginBottom: '8px' }}>
+                            Condition: {equipment.condition}
+                          </p>
+                          <p style={{ color: '#64748b', marginBottom: '8px' }}>
+                            Location: {equipment.location}
+                          </p>
+                          <p style={{ color: '#64748b', marginBottom: '8px' }}>
+                            Description: {equipment.description}
+                          </p>
+                          {availabilityInfo && availabilityInfo.allocatedQuantity > 0 && (
+                            <div style={{ 
+                              backgroundColor: '#f1f5f9', 
+                              padding: '8px', 
+                              borderRadius: '6px', 
+                              marginBottom: '8px',
+                              fontSize: '14px'
+                            }}>
+                              <p style={{ color: '#475569', margin: '0', fontWeight: '500' }}>
+                                📅 Currently Allocated: {availabilityInfo.allocatedQuantity} units
+                              </p>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                            <button
+                              className="btn btn-primary"
+                              onClick={() => handleRequestClick(equipment)}
+                              disabled={(equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity) === 0}
+                            >
+                              {(equipment.availableQuantity !== undefined ? equipment.availableQuantity : equipment.quantity) === 0 ? 'Not Available' : 'Request Equipment'}
+                            </button>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  {equipment.image && (
+                    <img
+                      src={`http://localhost:5000${equipment.image}`}
+                      alt={equipment.name}
+                      style={{
+                        width: '180px',
+                        height: '140px',
+                        borderRadius: '12px',
+                        marginLeft: '32px',
+                        objectFit: 'cover',
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.08)'
+                      }}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -369,14 +563,68 @@ const UserEquipment = () => {
       {/* Request Equipment Modal */}
       {requestModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+          <div className="bg-white rounded-lg max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-semibold mb-4">Request Equipment</h2>
-            <p className="mb-4">
-              Equipment: <b>{requestEquipment?.name}</b>
-            </p>
-            <p className="mb-4 text-sm text-gray-600">
-              Available: {requestEquipment?.availableQuantity !== undefined ? requestEquipment?.availableQuantity : requestEquipment?.quantity || 0} units
-            </p>
+            <div className="mb-6">
+              <p className="mb-4">
+                Equipment: <b>{requestEquipment?.name}</b>
+              </p>
+              
+              {/* Availability Overview */}
+              {(() => {
+                const availabilityInfo = requestEquipment ? getAvailabilityInfo(requestEquipment._id) : null;
+                const allocations = requestEquipment ? equipmentAllocations[requestEquipment._id] : null;
+                
+                return (
+                  <>
+                    <div className="bg-gray-50 p-3 rounded-lg mb-4">
+                      <h4 className="font-medium text-sm text-gray-700 mb-2">Availability Status</h4>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-blue-600">
+                            {availabilityInfo?.totalQuantity || requestEquipment?.quantity || 0}
+                          </div>
+                          <div className="text-gray-600">Total</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-green-600">
+                            {availabilityInfo?.availableQuantity || requestEquipment?.availableQuantity || requestEquipment?.quantity || 0}
+                          </div>
+                          <div className="text-gray-600">Available</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-600">
+                            {availabilityInfo?.allocatedQuantity || 0}
+                          </div>
+                          <div className="text-gray-600">Booked</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Current Allocations Alert */}
+                    {allocations?.currentAllocations && allocations.currentAllocations.length > 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg mb-4">
+                        <h5 className="font-medium text-sm text-yellow-800 mb-2">
+                          📋 Currently Booked ({allocations.currentAllocations.length} bookings)
+                        </h5>
+                        <div className="space-y-1 text-xs text-yellow-700">
+                          {allocations.currentAllocations.slice(0, 2).map((allocation, index) => (
+                            <div key={index}>
+                              • {allocation.quantityAllocated} units booked until {new Date(allocation.expectedReturnDate).toLocaleDateString()}
+                            </div>
+                          ))}
+                          {allocations.currentAllocations.length > 2 && (
+                            <div className="text-yellow-600">
+                              + {allocations.currentAllocations.length - 2} more bookings...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
             
             <div className="space-y-4">
               <div>
@@ -400,15 +648,125 @@ const UserEquipment = () => {
               </div>
               
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Request From (Date & Time) *</label>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DateTimePicker
+                    label="Start Date & Time"
+                    value={requestStartDate}
+                    onChange={(newValue) => {
+                      setRequestStartDate(newValue);
+                      // If return date is before new start date, clear it
+                      if (expectedReturnDate && newValue && dayjs(expectedReturnDate).isBefore(newValue)) {
+                        setExpectedReturnDate(null);
+                      }
+                    }}
+                    shouldDisableDate={(date) => {
+                      // Disable past dates
+                      if (date.isBefore(dayjs(), 'day')) return true;
+                      
+                      // Check if equipment is fully booked on this date
+                      if (requestEquipment && equipmentAllocations[requestEquipment._id]) {
+                        const availabilityInfo = getAvailabilityInfo(requestEquipment._id);
+                        return availabilityInfo && availabilityInfo.isFullyBooked && isDateTimeBlocked(date, requestEquipment._id);
+                      }
+                      
+                      return false;
+                    }}
+                    shouldDisableTime={(value, view) => {
+                      if (!requestEquipment) return false;
+                      
+                      // Check if this specific time is blocked
+                      return isDateTimeBlocked(value, requestEquipment._id);
+                    }}
+                    minDateTime={dayjs()}
+                    renderInput={(params) => <input {...params} />}
+                  />
+                </LocalizationProvider>
+                
+                {/* Current Date/Time Button */}
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setRequestStartDate(dayjs())}
+                    className="text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    📅 Set to Current Date & Time
+                  </button>
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Return By (Date & Time) *</label>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DateTimePicker
                     label="Return Date & Time"
                     value={expectedReturnDate ? dayjs(expectedReturnDate) : null}
-                    onChange={newValue => setExpectedReturnDate(newValue ? newValue.toDate().toISOString() : null)}
+                    onChange={newValue => setExpectedReturnDate(newValue)}
+                    shouldDisableDate={(date) => {
+                      // Disable dates before start date
+                      if (requestStartDate && date.isBefore(requestStartDate, 'day')) return true;
+                      
+                      // Disable past dates
+                      if (date.isBefore(dayjs(), 'day')) return true;
+                      
+                      // Check if equipment is fully booked on this date
+                      if (requestEquipment && equipmentAllocations[requestEquipment._id]) {
+                        const availabilityInfo = getAvailabilityInfo(requestEquipment._id);
+                        return availabilityInfo && availabilityInfo.isFullyBooked && isDateTimeBlocked(date, requestEquipment._id);
+                      }
+                      
+                      return false;
+                    }}
+                    shouldDisableTime={(value, view) => {
+                      if (!requestEquipment) return false;
+                      
+                      // Disable times before start time on same day
+                      if (requestStartDate && value.isSame(requestStartDate, 'day') && value.isBefore(requestStartDate)) {
+                        return true;
+                      }
+                      
+                      // Check if this specific time is blocked
+                      return isDateTimeBlocked(value, requestEquipment._id);
+                    }}
+                    minDateTime={requestStartDate || dayjs()}
                     renderInput={(params) => <input {...params} />}
                   />
                 </LocalizationProvider>
+                
+                {/* Show blocked time information */}
+                {requestEquipment && equipmentAllocations[requestEquipment._id] && (
+                  <div className="mt-2">
+                    {(() => {
+                      const allocations = equipmentAllocations[requestEquipment._id];
+                      const currentAllocations = allocations.currentAllocations || [];
+                      
+                      if (currentAllocations.length > 0) {
+                        return (
+                          <div className="text-sm text-gray-600">
+                            <p className="font-medium text-red-600 mb-1">⚠️ Blocked Time Slots:</p>
+                            {currentAllocations.slice(0, 3).map((allocation, index) => (
+                              <div key={index} className="text-xs">
+                                • {dayjs(allocation.allocationDate).format('MMM DD, YYYY HH:mm')} - 
+                                  {dayjs(allocation.expectedReturnDate).format('MMM DD, YYYY HH:mm')} 
+                                  ({allocation.quantityAllocated} units)
+                              </div>
+                            ))}
+                            {currentAllocations.length > 3 && (
+                              <div className="text-xs text-gray-500">
+                                + {currentAllocations.length - 3} more bookings
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="text-sm text-green-600">
+                          ✅ All time slots available
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
               
               <div>
@@ -431,6 +789,7 @@ const UserEquipment = () => {
                   setRequestModalOpen(false);
                   setRequestPurpose('');
                   setRequestQuantity(1);
+                  setRequestStartDate(dayjs());
                   setExpectedReturnDate(null);
                 }}
               >
@@ -439,7 +798,7 @@ const UserEquipment = () => {
               <button
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 onClick={handleSubmitRequest}
-                disabled={!expectedReturnDate}
+                disabled={!requestStartDate || !expectedReturnDate}
               >
                 Send Request
               </button>
@@ -659,6 +1018,8 @@ const UserEquipment = () => {
           )}
         </div>
       )}
+
+
     </div>
   );
 };
@@ -732,7 +1093,7 @@ const EquipmentCard = ({ equipment, onRequest }) => {
                         maxHeight: '200px'
                       }}
                     />
-                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-purple-200/20 via-blue-200/20 to-purple-200/20 rounded-lg blur-xl group-hover:blur-2xl transition-all duration-700"></div>
+                    <div className="absolute inset-0 -z-10 bg-gradient-to-r from-purple-200/20 via-blue-200/20 to-transparent rounded-lg blur-xl group-hover:blur-2xl transition-all duration-700"></div>
                   </div>
                 </div>
                 

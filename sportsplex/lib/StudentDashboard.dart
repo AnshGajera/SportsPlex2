@@ -132,7 +132,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     Navigator.pushNamed(
                       context,
                       '/requestEquipment',
-                      arguments: {'userId': userData?['_id'] ?? ''},
+                      arguments: {
+                        'userId': userData?['_id'] ?? '',
+                        'token': widget.token,
+                      },
                     );
                     break;
                   case 'Join Clubs':
@@ -170,10 +173,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'Profile',
-                  child: Text('Profile'),
-                ),
+                const PopupMenuItem(value: 'Profile', child: Text('Profile')),
                 const PopupMenuItem(
                   value: 'Request Equipment',
                   child: Text('Request Equipment'),
@@ -293,7 +293,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           Navigator.pushNamed(
                             context,
                             '/requestEquipment',
-                            arguments: {'userId': userData?['_id'] ?? ''},
+                            arguments: {
+                              'userId': userData?['_id'] ?? '',
+                              'token': widget.token,
+                            },
                           );
                         },
                       ),
