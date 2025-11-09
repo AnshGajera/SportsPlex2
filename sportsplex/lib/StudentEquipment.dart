@@ -150,7 +150,9 @@ class _StudentEquipmentState extends State<StudentEquipment> {
           isRequestsLoading = false;
           requestsError = 'Failed to fetch requests: ${response.statusCode}';
         });
-        print('My Requests API Error: ${response.statusCode} - ${response.body}');
+        print(
+          'My Requests API Error: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       print('My Requests API Exception: $e');
@@ -1330,6 +1332,45 @@ class _StudentEquipmentState extends State<StudentEquipment> {
         ),
 
         // Requests List
+        if (requestsError != null) ...[
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Card(
+              color: Colors.red[50],
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.red),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        requestsError ?? 'Failed to load requests',
+                        style: TextStyle(color: Colors.red[800]),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        // Try refreshing (will prompt login if token missing)
+                        fetchMyRequests();
+                      },
+                      child: Text('Retry'),
+                    ),
+                    if (requestsError != null &&
+                        requestsError!.toLowerCase().contains('not'))
+                      TextButton(
+                        onPressed: () {
+                          // Navigate to login so user can re-authenticate
+                          Navigator.pushReplacementNamed(context, '/login');
+                        },
+                        child: Text('Login'),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
         Expanded(
           child: isRequestsLoading
               ? Center(
