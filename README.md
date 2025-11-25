@@ -1,70 +1,343 @@
-# Getting Started with Create React App
+# 🏟️ SportsPlex - University Sports Complex Management System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+<p align="center">
+  <img src="sportsplex/assets/logo.png" alt="SportsPlex Logo" width="150"/>
+</p>
 
-## Available Scripts
+**SportsPlex** is a comprehensive sports complex management system designed for university campuses (specifically CHARUSAT). It provides a complete solution for managing sports equipment, clubs, matches, events, and announcements with role-based access control.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## 📋 Table of Contents
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [API Endpoints](#-api-endpoints)
+- [User Roles](#-user-roles)
+- [Screenshots](#-screenshots)
+- [Contributing](#-contributing)
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## ✨ Features
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 🎯 Core Features
 
-### `npm run build`
+- **User Authentication** - Email/Password and Google Sign-In with Firebase
+- **Role-Based Access Control** - Three user roles: Student, Student Head, Admin
+- **Equipment Management** - Track, allocate, and request sports equipment
+- **Club Management** - Create and manage sports clubs with member tracking
+- **Match Management** - Schedule matches with live scoring functionality
+- **Event Management** - Create and manage sports events and tournaments
+- **Announcements** - Broadcast important updates to users
+- **Profile Management** - User profiles with certificate uploads
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 👥 Role-Specific Features
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+#### Students
+- View and request sports equipment
+- Browse and join sports clubs
+- View upcoming matches and events
+- Access announcements
+- Request Student Head role promotion
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+#### Student Heads
+- All student features
+- Manage club activities
+- Update live match scores
+- Create club-specific announcements
 
-### `npm run eject`
+#### Administrators
+- Full system access
+- User management and role assignment
+- Equipment inventory management
+- Approve/reject student head requests
+- Create and manage all clubs, matches, and events
+- System-wide announcements
+- Analytics dashboard
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🛠️ Tech Stack
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Frontend (Web - React)
+| Technology | Purpose |
+|------------|---------|
+| React 19 | UI Framework |
+| React Router DOM 7 | Navigation |
+| Material UI | Component Library |
+| Tailwind CSS | Styling |
+| Axios | HTTP Client |
+| Firebase | Authentication |
+| Lucide React | Icons |
+| React Hook Form + Zod | Form Handling & Validation |
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Frontend (Mobile - Flutter)
+| Technology | Purpose |
+|------------|---------|
+| Flutter 3.8+ | Cross-platform Mobile Framework |
+| HTTP | API Requests |
+| Table Calendar | Calendar Widget |
+| Font Awesome | Icons |
 
-## Learn More
+### Backend (Node.js)
+| Technology | Purpose |
+|------------|---------|
+| Express 5 | Web Framework |
+| MongoDB Atlas | Database |
+| Mongoose | ODM |
+| JWT | Authentication |
+| Bcrypt.js | Password Hashing |
+| Multer | File Uploads |
+| Firebase Admin | Google Auth Verification |
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 📁 Project Structure
 
-### Code Splitting
+```
+SportsPlex2/
+├── 📂 backend/                    # Node.js Express Backend
+│   ├── 📂 controllers/            # Request handlers
+│   │   ├── announcementController.js
+│   │   ├── authController.js
+│   │   ├── equipmentController.js
+│   │   └── matchController.js
+│   ├── 📂 middleware/             # Express middleware
+│   │   ├── authMiddleware.js
+│   │   └── equipmentUpload.js
+│   ├── 📂 models/                 # Mongoose schemas
+│   │   ├── announcement.js
+│   │   ├── club.js
+│   │   ├── equipment.js
+│   │   ├── event.js
+│   │   ├── match.js
+│   │   └── user.js
+│   ├── 📂 routes/                 # API routes
+│   ├── 📂 services/               # Business logic
+│   ├── 📂 uploads/                # File storage
+│   └── server.js                  # Entry point
+│
+├── 📂 src/                        # React Web Frontend
+│   ├── 📂 components/             # Reusable components
+│   │   ├── 📂 Bookings/
+│   │   ├── 📂 Layout/
+│   │   ├── 📂 Matches/
+│   │   ├── 📂 Modals/
+│   │   └── 📂 StudentHead/
+│   ├── 📂 pages/                  # Page components
+│   │   ├── AdminDashboard.js
+│   │   ├── UserDashboard.js
+│   │   ├── Login.js
+│   │   ├── Register.js
+│   │   └── ... (40+ pages)
+│   ├── 📂 context/                # React Context
+│   ├── 📂 services/               # API services
+│   └── 📂 hooks/                  # Custom hooks
+│
+├── 📂 sportsplex/                 # Flutter Mobile App
+│   ├── 📂 lib/                    # Dart source files
+│   │   ├── main.dart
+│   │   ├── AdminDashboard.dart
+│   │   ├── StudentDashboard.dart
+│   │   └── ... (20+ screens)
+│   ├── 📂 android/                # Android config
+│   ├── 📂 ios/                    # iOS config
+│   └── 📂 assets/                 # Images & icons
+│
+├── 📂 Firebase/                   # Firebase configuration
+└── 📂 public/                     # Static assets
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## 🚀 Installation
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Prerequisites
 
-### Making a Progressive Web App
+- Node.js 18+
+- npm or yarn
+- MongoDB Atlas account
+- Firebase project
+- Flutter SDK (for mobile app)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### Backend Setup
 
-### Advanced Configuration
+```bash
+# Navigate to backend directory
+cd backend
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+# Install dependencies
+npm install
 
-### Deployment
+# Start the server
+node server.js
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The backend will run on `http://localhost:5000`
 
-### `npm run build` fails to minify
+### Frontend (React Web) Setup
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```bash
+# From project root
+npm install
+
+# Start development server
+npm start
+```
+
+The web app will run on `http://localhost:3000`
+
+### Mobile App (Flutter) Setup
+
+```bash
+# Navigate to Flutter directory
+cd sportsplex
+
+# Get dependencies
+flutter pub get
+
+# Run on connected device/emulator
+flutter run
+```
+
+---
+
+## 📱 Usage
+
+### Getting Started
+
+1. **Register** - Create an account with email or Google Sign-In
+2. **Complete Profile** - Fill in required details (Roll No, College, Department)
+3. **Explore** - Browse equipment, clubs, matches, and events
+4. **Request Equipment** - Submit equipment requests for approval
+5. **Join Clubs** - Become a member of sports clubs
+
+### Admin Access
+
+Admins can:
+- Access the admin dashboard at `/admin`
+- Manage all system resources
+- Approve pending requests
+- View analytics
+
+---
+
+## 🔗 API Endpoints
+
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | Register new user |
+| POST | `/api/auth/login` | User login |
+| POST | `/api/auth/google` | Google Sign-In |
+
+### Equipment
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/equipment` | Get all equipment |
+| POST | `/api/equipment` | Add equipment (Admin) |
+| PUT | `/api/equipment/:id` | Update equipment |
+| DELETE | `/api/equipment/:id` | Delete equipment |
+
+### Clubs
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/clubs` | Get all clubs |
+| POST | `/api/clubs` | Create club (Admin) |
+| PUT | `/api/clubs/:id` | Update club |
+| POST | `/api/clubs/:id/join` | Join club |
+
+### Matches
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/matches` | Get all matches |
+| POST | `/api/matches` | Create match |
+| PUT | `/api/matches/:id/score` | Update live score |
+
+### Events
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/events` | Get all events |
+| POST | `/api/events` | Create event |
+
+### Announcements
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/announcements` | Get announcements |
+| POST | `/api/announcements` | Create announcement |
+
+---
+
+## 👤 User Roles
+
+| Role | Permissions |
+|------|------------|
+| **Student** | View equipment, clubs, matches, events; Request equipment; Join clubs; Request Student Head role |
+| **Student Head** | All student permissions + Manage club activities; Update live scores; Create club announcements |
+| **Admin** | Full system access; User management; All CRUD operations; Analytics access |
+
+---
+
+## 🔧 Environment Variables
+
+Create a `.env` file in the backend directory:
+
+```env
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+FIREBASE_PROJECT_ID=your_firebase_project_id
+PORT=5000
+```
+
+---
+
+## 📸 Key Screens
+
+- **Login/Register** - Authentication with email or Google
+- **User Dashboard** - Quick access to all features
+- **Admin Dashboard** - System overview with statistics
+- **Equipment Management** - Inventory tracking
+- **Club Management** - Club creation and member management
+- **Match Center** - Live scoring and match schedules
+- **Events Calendar** - Upcoming sports events
+- **Announcements** - Important updates feed
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is developed for educational purposes as part of a university semester project.
+
+---
+
+## 👨‍💻 Authors
+
+- **Ansh Gajera** - *Developer*
+
+---
+
+## 🙏 Acknowledgments
+
+- CHARUSAT University for project guidance
+- Firebase for authentication services
+- MongoDB Atlas for database hosting
+
+---
+
+<p align="center">
+  Made with ❤️ for CHARUSAT Sports Complex
+</p>
