@@ -327,6 +327,7 @@ This project is developed for educational purposes as part of a university semes
 ## 👨‍💻 Authors
 
 - **Ansh Gajera** - *Developer*
+- **Yash Khare** - *Developer*
 
 ---
 
